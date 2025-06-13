@@ -20,21 +20,48 @@ def create_app():
     app = Flask(__name__, template_folder='templates', static_folder='static')
 
     # --- CONFIGURATION ---
-    # Use environment variables for secret key and database URI for security and flexibility.
-    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'a-default-secret-key-for-dev-that-is-still-secure')
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'a-very-secure-default-secret-key-for-development')
 
-    # Database configuration for production (e.g., Render) and local development
-    database_url = os.environ.get('DATABASE_URL')
-    if database_url and database_url.startswith("mysql://"):
-        # The mysql-connector-python package requires 'mysql+mysqlconnector'
-        # Render's DATABASE_URL provides 'mysql://', so we need to replace it.
-        database_url = database_url.replace("mysql://", "mysql+mysqlconnector://", 1)
+    # --- DATABASE CONFIGURATION (Inspired by your get_db_connection function) ---
 
-    # Use the environment variable if available, otherwise fall back to the local URI
-    app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'mysql+mysqlconnector://root:cjarqi@localhost/guidance_db'
+    # 1. Define the default connection parameters (like your Railway defaults)
+    DEFAULT_DB_HOST = 'localhost'
+    DEFAULT_DB_USER = 'root'
+    DEFAULT_DB_PASSWORD = "cjarqi"
+    DEFAULT_DB_NAME = "guidance_db"
+    DEFAULT_DB_PORT = '3306' # Keep as a string initially, like os.getenv() does
+
+    # 2. Get connection parameters from environment variables, falling back to defaults
+    db_user = os.environ.get('DB_USER', DEFAULT_DB_USER)
+    db_password = os.environ.get('DB_PASSWORD', DEFAULT_DB_PASSWORD)
+    db_name = os.environ.get('DB_NAME', DEFAULT_DB_NAME)
     
+    # 3. Special handling for the database host as per your logic
+    db_host = os.environ.get('DB_HOST') # Get it first without a default
+    if not db_host or db_host.lower() == 'localhost':
+        # If DB_HOST is not set, or if it's explicitly 'localhost', use the default remote host.
+        db_host = DEFAULT_DB_HOST
+    
+    # 4. Handle the port, ensuring it's a valid integer
+    db_port_str = os.environ.get('DB_PORT', DEFAULT_DB_PORT)
+    try:
+        db_port = int(db_port_str)
+    except (ValueError, TypeError):
+        print(f"WARNING: DB_PORT value '{db_port_str}' is not a valid integer. Falling back to default port {DEFAULT_DB_PORT}.")
+        db_port = int(DEFAULT_DB_PORT)
+
+    # 5. Construct the final SQLAlchemy Database URI string
+    sqlalchemy_uri = (
+        f"mysql+mysqlconnector://{db_user}:{db_password}@"
+        f"{db_host}:{db_port}/{db_name}"
+    )
+    
+    app.config['SQLALCHEMY_DATABASE_URI'] = sqlalchemy_uri
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SQLALCHEMY_ECHO'] = False # Set to True for debugging SQL queries
+
+    # --- End of new database configuration ---
+
     upload_folder_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
     os.makedirs(upload_folder_path, exist_ok=True)
     app.config['UPLOAD_FOLDER'] = upload_folder_path
@@ -54,8 +81,7 @@ def create_app():
     migrate.init_app(app, db) 
     mail.init_app(app)
 
-    # --- START: CORRECTED IMPORTS AND CONTEXT PROCESSOR ---
-    # These must be inside create_app to avoid circular imports
+    # --- START: IMPORTS AND CONTEXT PROCESSOR ---
     from .models import StaffUser, Notification, UserRole
 
     @login_manager.user_loader
@@ -75,11 +101,9 @@ def create_app():
                 context['notifications'] = Notification.query.filter_by(user_id=current_user.id).order_by(Notification.timestamp.desc()).limit(10).all()
                 context['unread_notification_count'] = Notification.query.filter_by(user_id=current_user.id, is_read=False).count()
             except Exception:
-                # This can fail during migrations or initial app startup before tables exist.
-                # Fail gracefully to prevent the application from crashing.
                 pass
         return context
-    # --- END: CORRECTED IMPORTS AND CONTEXT PROCESSOR ---
+    # --- END: IMPORTS AND CONTEXT PROCESSOR ---
 
     # --- LOGIN MANAGER CONFIGURATION ---
     login_manager.login_view = 'auth.login_page' 
@@ -91,14 +115,5 @@ def create_app():
 
     from .views import views_bp
     app.register_blueprint(views_bp, url_prefix='/')
-
-    # --- DATABASE CREATION (COMMENTED OUT FOR PRODUCTION) ---
-    # In a production environment with migrations, this should be disabled.
-    # Database schema management should be handled by 'flask db upgrade' 
-    # as part of the build/deploy process, not by db.create_all().
-    #
-    # with app.app_context():
-    #     db.create_all() 
-    #     print("!!! WARNING: db.create_all() was called. This is not recommended for production with migrations.")
 
     return app
