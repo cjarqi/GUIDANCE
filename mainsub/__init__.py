@@ -22,9 +22,9 @@ def create_app():
     # --- CONFIGURATION ---
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'a-very-secure-default-secret-key-for-development')
 
-    # --- DATABASE CONFIGURATION (Using Individual Environment Variables) ---
+    # --- DATABASE CONFIGURATION (For Aiven or other external DBs) ---
 
-    # 1. Define the default parameters for LOCAL development
+    # 1. Define the default parameters for LOCAL development ONLY
     LOCAL_DB_HOST = 'localhost'
     LOCAL_DB_USER = 'root'
     LOCAL_DB_PASSWORD = "cjarqi"
@@ -32,13 +32,22 @@ def create_app():
     LOCAL_DB_PORT = '3306'
 
     # 2. Get connection parameters from environment variables.
-    #    If an environment variable is not found, it will use your local default.
-    #    This is why you MUST set these variables in the Render environment.
+    #    On Render, these MUST be set with your Aiven credentials.
+    #    If not found, it falls back to your local settings (which fails on Render).
     db_host = os.environ.get('DB_HOST', LOCAL_DB_HOST)
     db_user = os.environ.get('DB_USER', LOCAL_DB_USER)
     db_password = os.environ.get('DB_PASSWORD', LOCAL_DB_PASSWORD)
     db_name = os.environ.get('DB_NAME', LOCAL_DB_NAME)
     db_port = os.environ.get('DB_PORT', LOCAL_DB_PORT)
+    
+    # Add a print statement for debugging in the Render logs
+    print(f"--- DATABASE CONNECTION ATTEMPT ---")
+    print(f"Connecting to Host: {db_host}")
+    print(f"Connecting on Port: {db_port}")
+    print(f"Connecting as User: {db_user}")
+    print(f"Connecting to DB:   {db_name}")
+    print(f"---------------------------------")
+
 
     # 3. Construct the final SQLAlchemy Database URI string
     sqlalchemy_uri = (
