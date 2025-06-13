@@ -1,0 +1,66 @@
+
+{# GUIDANCE/mainsub/templates/settings/violations/_violation_form.html #}
+<form method="POST" action="{{ form_action_url }}" class="space-y-4">
+    {{ form_hidden_tag() if form_hidden_tag else '' }} {# For CSRF if using Flask-WTF later, or method override #}
+    
+    <div>
+        <label for="violation_code" class="block text-sm font-medium text-slate-700 mb-1">Violation Code <span class="text-red-500">*</span></label>
+        <input type="text" name="violation_code" id="violation_code" required maxlength="20"
+               value="{{ violation.violation_code if violation else '' }}"
+               class="block w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg shadow-sm
+                      focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+               placeholder="e.g., M01, MJ05">
+        {% if violation and request.endpoint == 'views.edit_violation' %}
+            <p class="text-xs text-slate-500 mt-1">Note: Changing code might affect historical references if not handled carefully elsewhere.</p>
+        {% endif %}
+    </div>
+
+    <div>
+        <label for="description" class="block text-sm font-medium text-slate-700 mb-1">Description <span class="text-red-500">*</span></label>
+        <textarea name="description" id="description" rows="4" required
+                  class="block w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg shadow-sm resize-y
+                         focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                  placeholder="Full description of the violation...">{{ violation.description if violation else '' }}</textarea>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+            <label for="type" class="block text-sm font-medium text-slate-700 mb-1">Type <span class="text-red-500">*</span></label>
+            <select name="type" id="type" required
+                    class="block w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg shadow-sm
+                           focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                <option value="Minor" {% if violation and violation.type == 'Minor' %}selected{% endif %}>Minor</option>
+                <option value="Major" {% if violation and violation.type == 'Major' %}selected{% endif %}>Major</option>
+            </select>
+        </div>
+        <div>
+            <label for="reference_page" class="block text-sm font-medium text-slate-700 mb-1">Handbook Reference Page</label>
+            <input type="text" name="reference_page" id="reference_page" maxlength="10"
+                   value="{{ violation.reference_page if violation else '' }}"
+                   class="block w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg shadow-sm
+                          focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                   placeholder="e.g., p.1, p.40">
+        </div>
+    </div>
+    
+    <div class="pt-2">
+        <label for="is_inherently_major" class="flex items-center">
+            <input type="checkbox" name="is_inherently_major" id="is_inherently_major" value="true"
+                   class="h-4 w-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
+                   {% if violation and violation.is_inherently_major %}checked{% endif %}>
+            <span class="ml-2 text-sm text-slate-700">Is Inherently Major Offense</span>
+        </label>
+        <p class="text-xs text-slate-500 mt-1">Check if this violation is listed directly under "Major Offenses" in the handbook, distinct from minor offenses that escalate.</p>
+    </div>
+
+    <div class="pt-5 flex justify-end space-x-3">
+        <a href="{{ url_for('views.violation_catalog_list') }}"
+           class="px-4 py-2 border border-slate-300 text-slate-700 bg-white rounded-lg text-sm font-medium hover:bg-slate-50 transition shadow-sm">
+            Cancel
+        </a>
+        <button type="submit"
+                class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+            {{ 'Save Changes' if violation else 'Add Violation' }}
+        </button>
+    </div>
+</form>

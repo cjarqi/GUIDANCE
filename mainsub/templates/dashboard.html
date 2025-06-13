@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Guidance Admin{% endblock %}
+
+{% block page_title %}Dashboard Overview{% endblock %}
+{% block page_subtitle %}Key metrics and recent activity in student conduct.{% endblock %}
+
+{% block content %}
+    {# Stats cards #}
+    {% include "_stats_cards.html" %}
+
+    {# Action Buttons #}
+    <div class="flex flex-wrap gap-4 mb-8">
+        <button id="openLogIncidentModalBtn"
+                class="py-2.5 px-5 bg-indigo-600 text-white rounded-lg font-medium text-sm flex items-center hover:bg-indigo-700 transition shadow-sm hover:shadow-md">
+            <i class="ri-add-circle-line mr-2 text-lg"></i>
+            Log New Incident
+        </button>
+        <a href="{{ url_for('views.student_list') }}"
+           class="py-2.5 px-5 border border-slate-300 text-slate-700 bg-white rounded-lg font-medium text-sm flex items-center hover:bg-slate-50 transition shadow-sm hover:shadow-md">
+            <i class="ri-group-line mr-2 text-lg"></i>
+            View Students
+        </a>
+    </div>
+
+    {# The Recent Incidents table now takes up the full width of the grid #}
+    <div class="grid grid-cols-1 gap-6">
+        {% include "_recent_incidents_table.html" %}
+    </div>
+
+    {# Include the Log Incident Modal (it's hidden by default) #}
+    {% include "_log_incident_modal.html" %}
+
+{% endblock %}
+
+{% block body_end_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // --- Log Incident Modal JS ---
+    const logIncidentModal = document.getElementById('logIncidentModal');
+    const logIncidentModalContent = document.getElementById('logIncidentModalContent');
+    const openLogIncidentBtnDashboard = document.getElementById('openLogIncidentModalBtn');
+    const closeLogIncidentBtn = document.getElementById('closeIncidentModalBtn');
+    const cancelLogIncidentBtn = document.getElementById('cancelLogIncidentBtn');
+    let tomStudentSelectInstance = null;
+    let tomViolationSelectInstance = null; // Variable for violation dropdown
+
+    const studentOffenseInfoEl = document.getElementById('studentOffenseInfo');
+    const violationSeverityInfoEl = document.getElementById('violationSeverityInfo');
+    const cheatedSubjectDiv = document.getElementById('cheated_subject_div');
+    const incidentForm = document.getElementById('logIncidentForm');
+    const dateCommittedInput = document.getElementById('date_committed');
+
+    // Initialize TomSelect for the Violation dropdown
+    const violationSearchableElement = document.getElementById('violation_id_searchable');
+    if (violationSearchableElement && typeof TomSelect !== 'undefined') {
+        tomViolationSelectInstance = new TomSelect(violationSearchableElement, {
+            placeholder: "Type or select a violation...",
+            onChange: async function(value) {
+                // We need to re-run handleViolationChange when the violation changes
+                await handleViolationChange();
+            }
+        });
+    }
+    
+    // Initialize TomSelect for the Student dropdown
+    const studentSearchableElement = document.getElementById('student_id_searchable');
+    if (studentSearchableElement && typeof TomSelect !== 'undefined') {
+        tomStudentSelectInstance = new TomSelect(studentSearchableElement, {
+            create: false,
+            sortField: { field: "text", direction: "asc" },
+            placeholder: "Type or select a student...",
+            onChange: async function(value) {
+                if (value) {
+                    await fetchStudentOffenseInfo(value);
+                    await handleViolationChange();
+                } else {
+                    if(studentOffenseInfoEl) {
+                        studentOffenseInfoEl.classList.add('hidden');
+                        studentOffenseInfoEl.textContent = '';
+                    }
+                    if(violationSeverityInfoEl) {
+                        violationSeverityInfoEl.classList.add('hidden');
+                        violationSeverityInfoEl.textContent = '';
+                    }
+                }
+            }
+        });
+    }
+
+    function openLogIncidentModal() {
+        if(incidentForm) incidentForm.reset();
+        if(tomStudentSelectInstance) tomStudentSelectInstance.clear();
+        if(tomViolationSelectInstance) tomViolationSelectInstance.clear(); // Clear violation dropdown on open
+        if(studentOffenseInfoEl) { studentOffenseInfoEl.classList.add('hidden'); studentOffenseInfoEl.textContent = ''; }
+        if(violationSeverityInfoEl) { violationSeverityInfoEl.classList.add('hidden'); violationSeverityInfoEl.textContent = ''; }
+        if(cheatedSubjectDiv) cheatedSubjectDiv.classList.add('hidden');
+        if(dateCommittedInput) {
+            const now = new Date();
+            const localNow = new Date(now.getTime() - (now.getTimezoneOffset() * 60000));
+            dateCommittedInput.value = localNow.toISOString().slice(0, 16);
+        }
+
+        if(logIncidentModal) logIncidentModal.classList.remove('hidden');
+        setTimeout(() => {
+            if(logIncidentModal) logIncidentModal.classList.remove('opacity-0');
+            if(logIncidentModalContent) {
+                logIncidentModalContent.classList.remove('scale-95', 'opacity-0');
+                logIncidentModalContent.classList.add('scale-100', 'opacity-100');
+            }
+        }, 10);
+    }
+
+    function closeLogIncidentModal() {
+        if(logIncidentModalContent) {
+            logIncidentModalContent.classList.remove('scale-100', 'opacity-100');
+            logIncidentModalContent.classList.add('scale-95', 'opacity-0');
+        }
+        if(logIncidentModal) logIncidentModal.classList.add('opacity-0');
+        setTimeout(() => {
+             if(logIncidentModal) logIncidentModal.classList.add('hidden');
+        }, 300);
+    }
+
+    if(openLogIncidentBtnDashboard) openLogIncidentBtnDashboard.addEventListener('click', openLogIncidentModal);
+    if(closeLogIncidentBtn) closeLogIncidentBtn.addEventListener('click', closeLogIncidentModal);
+    if(cancelLogIncidentBtn) cancelLogIncidentBtn.addEventListener('click', closeLogIncidentModal);
+
+    if(logIncidentModal) {
+        logIncidentModal.addEventListener('click', function(event) {
+            if (event.target === logIncidentModal) { closeLogIncidentModal(); }
+        });
+    }
+
+    async function fetchStudentOffenseInfo(studentId) {
+        if (!studentId || !studentOffenseInfoEl) {
+            if(studentOffenseInfoEl){ studentOffenseInfoEl.classList.add('hidden'); studentOffenseInfoEl.textContent = '';}
+            return null;
+        }
+        try {
+            const urlTemplate = "{{ url_for('views.get_student_offense_info', student_id=0) }}";
+            const fetchUrl = urlTemplate.replace('/0', `/${studentId}`);
+            const response = await fetch(fetchUrl);
+
+            if (!response.ok) {
+                studentOffenseInfoEl.textContent = 'Error fetching student info.';
+                studentOffenseInfoEl.className = 'text-xs text-red-600 mt-1';
+                studentOffenseInfoEl.classList.remove('hidden');
+                return null;
+            }
+            const data = await response.json();
+            const minorOffenses = data.minor_offense_count;
+
+            studentOffenseInfoEl.classList.remove('hidden');
+            if (minorOffenses === 0) {
+                studentOffenseInfoEl.textContent = `This will be ${data.student_name}'s 1st Minor Offense.`;
+                studentOffenseInfoEl.className = 'text-xs text-slate-500 mt-1';
+            } else if (minorOffenses === 1) {
+                studentOffenseInfoEl.textContent = `This will be ${data.student_name}'s 2nd Minor Offense.`;
+                studentOffenseInfoEl.className = 'text-xs text-orange-600 mt-1';
+            } else if (minorOffenses >= 2) {
+                studentOffenseInfoEl.textContent = `${data.student_name} has ${minorOffenses} prior active minor offenses.`;
+                studentOffenseInfoEl.className = 'text-xs text-red-600 font-semibold mt-1';
+            }
+            return minorOffenses;
+        } catch (error) {
+            studentOffenseInfoEl.textContent = 'Could not load student data.';
+            studentOffenseInfoEl.className = 'text-xs text-red-600 mt-1';
+            studentOffenseInfoEl.classList.remove('hidden');
+            return null;
+        }
+    }
+
+    async function handleViolationChange() {
+        const violationSelect = document.getElementById('violation_id_searchable');
+        if (!violationSelect || !violationSelect.value || !violationSeverityInfoEl) {
+            if(violationSeverityInfoEl){violationSeverityInfoEl.classList.add('hidden'); violationSeverityInfoEl.textContent = '';}
+            return;
+        }
+
+        const selectedOption = violationSelect.options[violationSelect.selectedIndex];
+        const violationType = selectedOption.dataset.type;
+        const violationText = selectedOption.textContent.split('(')[0].trim();
+
+        if(cheatedSubjectDiv){
+            if (violationText.toLowerCase().includes('cheating') || violationText.toLowerCase().includes('academic dishonesty')) {
+                cheatedSubjectDiv.classList.remove('hidden');
+            } else {
+                cheatedSubjectDiv.classList.add('hidden');
+                const cheatedSubjectInput = document.getElementById('cheated_subject');
+                if(cheatedSubjectInput) cheatedSubjectInput.value = '';
+            }
+        }
+
+        const currentStudentId = tomStudentSelectInstance ? tomStudentSelectInstance.getValue() : null;
+        let minorOffenses = null;
+
+        if (currentStudentId) {
+            minorOffenses = await fetchStudentOffenseInfo(currentStudentId);
+        } else {
+            if(studentOffenseInfoEl) { studentOffenseInfoEl.classList.add('hidden'); studentOffenseInfoEl.textContent = '';}
+        }
+
+        if (violationType === 'Minor' && currentStudentId) {
+            if (minorOffenses === null) {
+                violationSeverityInfoEl.textContent = 'Select student to see offense context.';
+                violationSeverityInfoEl.className = 'text-xs text-orange-600 mt-1';
+                violationSeverityInfoEl.classList.remove('hidden');
+            } else if (minorOffenses >= 2) {
+                violationSeverityInfoEl.textContent = 'ALERT: This 3rd (or subsequent) Minor Offense will be treated as a MAJOR OFFENSE.';
+                violationSeverityInfoEl.className = 'text-xs text-red-600 font-bold mt-1';
+                violationSeverityInfoEl.classList.remove('hidden');
+            } else {
+                violationSeverityInfoEl.classList.add('hidden');
+                violationSeverityInfoEl.textContent = '';
+            }
+        } else if (violationType === 'Major') {
+            violationSeverityInfoEl.textContent = 'This is a MAJOR OFFENSE.';
+            violationSeverityInfoEl.className = 'text-xs text-red-600 font-bold mt-1';
+            violationSeverityInfoEl.classList.remove('hidden');
+        } else {
+            violationSeverityInfoEl.classList.add('hidden');
+            violationSeverityInfoEl.textContent = '';
+        }
+    }
+
+});
+</script>
+{% endblock %}

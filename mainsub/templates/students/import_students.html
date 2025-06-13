@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Import Students - Guidance Admin{% endblock %}
+
+{% block page_title_bar %}
+<div class="mb-6">
+    <h1 class="text-2xl font-semibold text-slate-800">Bulk Import Students</h1>
+    <p class="text-sm text-slate-500">Upload an Excel file (.xlsx) to add or update student records.</p>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    
+    <!-- Upload Form Card -->
+    <div class="lg:col-span-1">
+        <div class="bg-white p-6 rounded-xl shadow-lg">
+            <h3 class="text-lg font-semibold text-slate-800 mb-4 border-b pb-3">Upload File</h3>
+            <form action="{{ url_for('views.import_students') }}" method="post" enctype="multipart/form-data" class="space-y-4">
+                <div>
+                    <label for="student_file" class="block text-sm font-medium text-slate-700 mb-1">Student Data File</label>
+                    <input type="file" name="student_file" id="student_file" required
+                           accept=".xlsx"
+                           class="block w-full text-sm text-slate-500
+                                  file:mr-4 file:py-2 file:px-4
+                                  file:rounded-lg file:border-0
+                                  file:text-sm file:font-semibold
+                                  file:bg-indigo-50 file:text-indigo-700
+                                  hover:file:bg-indigo-100 transition-colors cursor-pointer">
+                    <p class="text-xs text-slate-500 mt-2">
+                        Must be an .xlsx file. The filename should be in the format `programcode yearsection.xlsx` (e.g., `bscs 1b.xlsx`).
+                    </p>
+                </div>
+                <div class="pt-2">
+                    <button type="submit"
+                            class="w-full flex justify-center py-2.5 px-4 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-sm">
+                        <i class="ri-upload-cloud-2-line mr-2"></i>
+                        Upload and Process File
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Instructions & Template Download Card -->
+    <div class="lg:col-span-2">
+        <div class="bg-white p-6 rounded-xl shadow-lg">
+            <h3 class="text-lg font-semibold text-slate-800 mb-4 border-b pb-3">Instructions</h3>
+            <div class="text-sm text-slate-600 space-y-4">
+                <div>
+                    <h4 class="font-semibold text-slate-700">1. File Naming Convention</h4>
+                    <p class="mt-1">
+                        The name of the Excel file is critical. It must follow the format `PROGRAMCODE<space>YEARSECTION.xlsx`.
+                        For example, for Bachelor of Science in Computer Science, section 1B, the filename must be exactly `bscs 1b.xlsx`.
+                        The system uses this to assign the correct program and section to all students in the file.
+                    </p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-slate-700">2. File Format</h4>
+                    <p class="mt-1">
+                        The Excel file must have a specific structure. The student data must start at **Row 9**. The required columns are:
+                        <span class="font-mono text-xs bg-slate-100 p-1 rounded">Student No.</span>, 
+                        <span class="font-mono text-xs bg-slate-100 p-1 rounded">Surname</span>,
+                        <span class="font-mono text-xs bg-slate-100 p-1 rounded">First Name</span>, and
+                        <span class="font-mono text-xs bg-slate-100 p-1 rounded">Middle Name</span>.
+                    </p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-slate-700">3. Download Template</h4>
+                    <p class="mt-1">
+                        To ensure your file is formatted correctly, download the official template.
+                    </p>
+                    <div class="mt-3">
+                         <a href="{{ url_for('static', filename='student_import_template.xlsx') }}" download
+                           class="inline-flex items-center py-2 px-3 bg-green-100 text-green-700 rounded-lg font-medium text-xs hover:bg-green-200 transition">
+                            <i class="ri-file-excel-2-line mr-2"></i>
+                            Download Template
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

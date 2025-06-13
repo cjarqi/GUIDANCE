@@ -1,0 +1,363 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} - Guidance Admin{% endblock %}
+
+{% block page_title_bar %}
+<div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div>
+        <h1 class="text-2xl font-semibold text-slate-800">{{ page_title }}</h1>
+        <p class="text-sm text-slate-500">Browse and manage all student records.</p>
+    </div>
+    <div class="flex space-x-2">
+        <a href="{{ url_for('views.import_students') }}" 
+                class="py-2 px-4 bg-green-600 text-white rounded-lg font-medium text-sm flex items-center hover:bg-green-700 transition shadow-sm hover:shadow-md">
+            <i class="ri-file-excel-2-line mr-2"></i>
+            Bulk Import
+        </a>
+        <a href="{{ url_for('views.add_student') }}" 
+                class="py-2 px-4 bg-indigo-600 text-white rounded-lg font-medium text-sm flex items-center hover:bg-indigo-700 transition shadow-sm hover:shadow-md">
+            <i class="ri-user-add-line mr-2"></i>
+            Add Student
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block head_extra %}
+<style>
+    #selected-counter {
+        background-color: #e0e7ff;
+        color: #4338ca;
+        padding: 0.5rem 0.75rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-xl shadow-lg overflow-hidden">
+    <div class="px-5 py-4 border-b border-slate-200">
+        <form method="GET" action="{{ url_for('views.student_list') }}" class="mb-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 items-end">
+                <div>
+                    <label for="q" class="block text-xs font-medium text-slate-600 mb-1">Student Name/ID</label>
+                    <input type="text" id="q" name="q" value="{{ request.args.get('q', '') }}" placeholder="Search name or ID..."
+                           class="block w-full h-9 px-3 text-sm border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                </div>
+                <div>
+                    <label for="filter_program" class="block text-xs font-medium text-slate-600 mb-1">Program</label>
+                    <select id="filter_program" name="program"
+                            class="block w-full h-9 px-3 text-sm border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        <option value="">All Programs</option>
+                        {% for prog in programs_for_filter %}
+                            <option value="{{ prog.id }}" {% if selected_program_id and selected_program_id == prog.id %}selected{% endif %}>
+                                {{ prog.program_name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                 <div>
+                    <label for="filter_year_section" class="block text-xs font-medium text-slate-600 mb-1">Year & Section</label>
+                    <input type="text" id="filter_year_section" name="year_section_query" value="{{ request.args.get('year_section_query', '') }}"
+                           placeholder="e.g., 1A, 2B"
+                           class="block w-full h-9 px-3 text-sm border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button type="submit"
+                            class="w-full sm:w-auto py-2 px-4 bg-indigo-600 text-white rounded-lg font-medium text-sm flex items-center justify-center hover:bg-indigo-700 transition shadow-sm">
+                        <i class="ri-filter-3-line mr-2"></i>Filter
+                    </button>
+                    <a href="{{ url_for('views.student_list') }}"
+                       class="w-full sm:w-auto py-2 px-4 border border-slate-300 text-slate-700 bg-white rounded-lg font-medium text-sm flex items-center justify-center hover:bg-slate-50 transition shadow-sm"
+                       title="Clear Filters">
+                        <i class="ri-refresh-line"></i>
+                    </a>
+                    <span id="selected-counter" class="text-sm font-medium whitespace-nowrap" style="display: none;">0 selected</span>
+                </div>
+            </div>
+        </form>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
+            <thead class="bg-slate-50">
+                <tr>
+                    <th scope="col" class="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                        <input type="checkbox" id="select-all-students" class="h-4 w-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500">
+                    </th>
+                    <th scope="col" class="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Student ID</th>
+                    <th scope="col" class="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Name</th>
+                    <th scope="col" class="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Program</th>
+                    <th scope="col" class="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Year & Section</th>
+                    <th scope="col" class="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
+                    <th scope="col" class="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-slate-200">
+                {% if students %}
+                    {% for student in students %}
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-5 py-3">
+                            <input type="checkbox" name="student_ids" value="{{ student.id }}" class="h-4 w-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 student-checkbox">
+                        </td>
+                        <td class="px-5 py-3 whitespace-nowrap text-sm text-slate-600">{{ student.student_number }}</td>
+                        <td class="px-5 py-3 whitespace-nowrap"><a href="{{ url_for('views.student_profile', student_id=student.id) }}" class="text-sm font-medium text-indigo-600 hover:text-indigo-800">{{ student.last_name }}, {{ student.first_name }}</a></td>
+                        <td class="px-5 py-3 whitespace-nowrap text-sm text-slate-500">{{ student.program.program_code if student.program else 'N/A' }}</td>
+                        <td class="px-5 py-3 whitespace-nowrap text-sm text-slate-500">{{ student.year_section }}</td>
+                        <td class="px-5 py-3 whitespace-nowrap">
+                            {% set status_color = { 'Active': 'bg-green-100 text-green-800', 'Suspended': 'bg-yellow-100 text-yellow-800', 'Expelled': 'bg-red-100 text-red-800', 'Graduated': 'bg-blue-100 text-blue-800', 'Inactive': 'bg-slate-100 text-slate-700', 'Transferred Out': 'bg-purple-100 text-purple-800', 'Dropped': 'bg-rose-100 text-rose-800'} %}
+                            <span class="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full {{ status_color.get(student.status, 'bg-gray-100 text-gray-800') }}">{{ student.status | title }}</span>
+                        </td>
+                        <td class="px-5 py-3 whitespace-nowrap text-sm font-medium space-x-2">
+                            <a href="{{ url_for('views.student_profile', student_id=student.id) }}" class="text-indigo-600 hover:text-indigo-800" title="View Profile"><i class="ri-search-eye-line"></i></a>
+                            <button type="button" class="text-blue-600 hover:text-blue-800 open-edit-student-modal-btn" data-student-id="{{ student.id }}" title="Edit Student"><i class="ri-pencil-line"></i></button>
+                            <button type="button" class="text-red-600 hover:text-red-800 open-log-incident-modal-trigger" 
+                                    data-student-id-to-log="{{ student.id }}"
+                                    data-student-name-to-log="{{ student.last_name }}, {{ student.first_name }} ({{ student.program.program_code if student.program else 'N/A' }} - {{ student.year_section }})"
+                                    title="Log New Incident">
+                                <i class="ri-alarm-warning-line"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr><td colspan="7" class="text-center py-10 text-slate-500 text-sm">No students found.</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% include "_log_incident_modal.html" %}
+{% include "students/_edit_student_modal.html" %}
+{% endblock %}
+
+{% block body_end_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // --- THIS IS THE CORRECTED AND COMPLETE SCRIPT ---
+
+    // --- Checkbox and Counter Logic ---
+    const selectAllCheckbox = document.getElementById('select-all-students');
+    const studentCheckboxes = document.querySelectorAll('.student-checkbox');
+    const selectedCounter = document.getElementById('selected-counter');
+
+    function updateSelectedCounter() {
+        const selectedCount = document.querySelectorAll('.student-checkbox:checked').length;
+        if (selectedCount > 0) {
+            selectedCounter.textContent = `${selectedCount} selected`;
+            selectedCounter.style.display = 'inline-block';
+        } else {
+            selectedCounter.style.display = 'none';
+        }
+    }
+
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            studentCheckboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            updateSelectedCounter();
+        });
+    }
+
+    studentCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            if (!this.checked) {
+                selectAllCheckbox.checked = false;
+            }
+            updateSelectedCounter();
+        });
+    });
+    updateSelectedCounter(); // Run on page load
+
+    // --- Edit Student Modal JS ---
+    const editStudentModal = document.getElementById('editStudentModal');
+    if (editStudentModal) {
+        const editStudentModalContent = document.getElementById('editStudentModalContent');
+        const closeEditStudentModalBtn = document.getElementById('closeEditStudentModalBtn');
+        const cancelEditStudentBtn = document.getElementById('cancelEditStudentBtn');
+        const editStudentForm = document.getElementById('editStudentForm');
+        document.querySelectorAll('.open-edit-student-modal-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                openEditStudentModal(this.dataset.studentId);
+            });
+        });
+        async function populateEditForm(studentId) {
+            try {
+                const response = await fetch(`/student/${studentId}/data`);
+                if (!response.ok) { throw new Error('Network response was not ok'); }
+                const student = await response.json();
+                document.getElementById('edit_student_id').value = student.id;
+                document.getElementById('edit_student_number').value = student.student_number;
+                document.getElementById('edit_first_name').value = student.first_name;
+                document.getElementById('edit_middle_name').value = student.middle_name || '';
+                document.getElementById('edit_last_name').value = student.last_name;
+                document.getElementById('edit_program_id').value = student.program_id;
+                document.getElementById('edit_year_section').value = student.year_section;
+                document.getElementById('edit_contact_email').value = student.contact_email;
+                document.getElementById('edit_contact_phone').value = student.contact_phone;
+                document.getElementById('edit_status').value = student.status;
+                editStudentForm.action = `/student/${student.id}/edit`;
+            } catch (error) {
+                console.error('Error populating edit form:', error);
+                alert('An error occurred while fetching student details.');
+            }
+        }
+        function openEditStudentModal(studentId) {
+            if(editStudentForm) editStudentForm.reset();
+            populateEditForm(studentId);
+            editStudentModal.classList.remove('hidden');
+            setTimeout(() => {
+                editStudentModal.classList.remove('opacity-0');
+                if(editStudentModalContent) {
+                    editStudentModalContent.classList.remove('scale-95', 'opacity-0');
+                    editStudentModalContent.classList.add('scale-100', 'opacity-100');
+                }
+            }, 10);
+        }
+        function closeEditStudentModal() {
+            if(editStudentModalContent) {
+                editStudentModalContent.classList.remove('scale-100', 'opacity-100');
+                editStudentModalContent.classList.add('scale-95', 'opacity-0');
+            }
+            editStudentModal.classList.add('opacity-0');
+            setTimeout(() => { editStudentModal.classList.add('hidden'); }, 300);
+        }
+        if(closeEditStudentModalBtn) closeEditStudentModalBtn.addEventListener('click', closeEditStudentModal);
+        if(cancelEditStudentBtn) cancelEditStudentBtn.addEventListener('click', closeEditStudentModal);
+        editStudentModal.addEventListener('click', function(event) { if (event.target === editStudentModal) { closeEditStudentModal(); }});
+    }
+
+    // --- Log Incident Modal JS ---
+    const logIncidentModal = document.getElementById('logIncidentModal');
+    if (logIncidentModal) {
+        const logIncidentModalContent = document.getElementById('logIncidentModalContent');
+        const closeLogIncidentBtn = document.getElementById('closeIncidentModalBtn');
+        const cancelLogIncidentBtn = document.getElementById('cancelLogIncidentBtn');
+        let tomStudentSelectInstance = null;
+        let tomViolationSelectInstance = null;
+        const studentOffenseInfoEl = document.getElementById('studentOffenseInfo');
+        const violationSeverityInfoEl = document.getElementById('violationSeverityInfo');
+        const cheatedSubjectDiv = document.getElementById('cheated_subject_div');
+        const incidentForm = document.getElementById('logIncidentForm');
+        const dateCommittedInput = document.getElementById('date_committed');
+        const violationSearchableElement = document.getElementById('violation_id_searchable');
+        if (violationSearchableElement && typeof TomSelect !== 'undefined') {
+            tomViolationSelectInstance = new TomSelect(violationSearchableElement, {
+                placeholder: "Type or select a violation...",
+                onChange: async function(value) { await handleViolationChange(); }
+            });
+        }
+        const studentSearchableElement = document.getElementById('student_id_searchable');
+        if (studentSearchableElement && typeof TomSelect !== 'undefined') {
+            tomStudentSelectInstance = new TomSelect(studentSearchableElement, {
+                create: false,
+                sortField: { field: "text", direction: "asc" },
+                placeholder: "Type or select a student...",
+                onChange: async function(value) {
+                    if (value) {
+                        await fetchStudentOffenseInfo(value);
+                        await handleViolationChange();
+                    } else {
+                        if(studentOffenseInfoEl) { studentOffenseInfoEl.classList.add('hidden'); studentOffenseInfoEl.textContent = ''; }
+                        if(violationSeverityInfoEl) { violationSeverityInfoEl.classList.add('hidden'); violationSeverityInfoEl.textContent = ''; }
+                    }
+                }
+            });
+        }
+        function openLogIncidentModal(studentId = null, studentName = null) {
+            if(incidentForm) incidentForm.reset();
+            if(tomStudentSelectInstance) {
+                tomStudentSelectInstance.clear();
+                if (studentId) {
+                    if (!tomStudentSelectInstance.getOption(studentId) && studentName) {
+                         tomStudentSelectInstance.addOption({value: studentId, text: studentName});
+                    }
+                    tomStudentSelectInstance.setValue(studentId, true); 
+                    fetchStudentOffenseInfo(studentId); 
+                }
+            }
+            if(tomViolationSelectInstance) tomViolationSelectInstance.clear();
+            if(studentOffenseInfoEl) { studentOffenseInfoEl.classList.add('hidden'); studentOffenseInfoEl.textContent = ''; }
+            if(violationSeverityInfoEl) { violationSeverityInfoEl.classList.add('hidden'); violationSeverityInfoEl.textContent = ''; }
+            if(cheatedSubjectDiv) cheatedSubjectDiv.classList.add('hidden');
+            if(dateCommittedInput) {
+                const now = new Date();
+                const localNow = new Date(now.getTime() - (now.getTimezoneOffset() * 60000));
+                dateCommittedInput.value = localNow.toISOString().slice(0, 16);
+            }
+            logIncidentModal.classList.remove('hidden');
+            setTimeout(() => {
+                logIncidentModal.classList.remove('opacity-0');
+                if(logIncidentModalContent) {
+                    logIncidentModalContent.classList.remove('scale-95', 'opacity-0');
+                    logIncidentModalContent.classList.add('scale-100', 'opacity-100');
+                }
+            }, 10);
+        }
+        document.querySelectorAll('.open-log-incident-modal-trigger').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const studentId = this.dataset.studentIdToLog;
+                const studentName = this.dataset.studentNameToLog;
+                openLogIncidentModal(studentId, studentName);
+            });
+        });
+        function closeLogIncidentModal() {
+            if(logIncidentModalContent) {
+                logIncidentModalContent.classList.remove('scale-100', 'opacity-100');
+                logIncidentModalContent.classList.add('scale-95', 'opacity-0');
+            }
+            logIncidentModal.classList.add('opacity-0');
+            setTimeout(() => { logIncidentModal.classList.add('hidden'); }, 300);
+        }
+        if(closeLogIncidentBtn) closeLogIncidentBtn.addEventListener('click', closeLogIncidentModal);
+        if(cancelLogIncidentBtn) cancelLogIncidentBtn.addEventListener('click', closeLogIncidentModal);
+        logIncidentModal.addEventListener('click', function(event) { if (event.target === logIncidentModal) { closeLogIncidentModal(); }});
+        async function fetchStudentOffenseInfo(studentId) {
+            if (!studentId || !studentOffenseInfoEl) { if(studentOffenseInfoEl){ studentOffenseInfoEl.classList.add('hidden'); studentOffenseInfoEl.textContent = '';} return null;}
+            try {
+                const urlTemplate = "{{ url_for('views.get_student_offense_info', student_id=0) }}";
+                const fetchUrl = urlTemplate.replace('/0', `/${studentId}`);
+                const response = await fetch(fetchUrl);
+                if (!response.ok) { throw new Error('Network response was not ok'); }
+                const data = await response.json();
+                const minorOffenses = data.minor_offense_count;
+                studentOffenseInfoEl.classList.remove('hidden');
+                if (minorOffenses === 0) { studentOffenseInfoEl.textContent = `This will be ${data.student_name}'s 1st Minor Offense.`; studentOffenseInfoEl.className = 'text-xs text-slate-500 mt-1'; }
+                else if (minorOffenses === 1) { studentOffenseInfoEl.textContent = `This will be ${data.student_name}'s 2nd Minor Offense.`; studentOffenseInfoEl.className = 'text-xs text-orange-600 mt-1'; }
+                else if (minorOffenses >= 2) { studentOffenseInfoEl.textContent = `${data.student_name} has ${minorOffenses} prior active minor offenses.`; studentOffenseInfoEl.className = 'text-xs text-red-600 font-semibold mt-1';}
+                return minorOffenses;
+            } catch (error) {
+                studentOffenseInfoEl.textContent = 'Could not load student data.'; studentOffenseInfoEl.className = 'text-xs text-red-600 mt-1'; studentOffenseInfoEl.classList.remove('hidden'); return null;
+            }
+        }
+        async function handleViolationChange() {
+            if (!violationSearchableElement || !violationSearchableElement.value || !violationSeverityInfoEl) { if(violationSeverityInfoEl){violationSeverityInfoEl.classList.add('hidden'); violationSeverityInfoEl.textContent = '';} return; }
+            const selectedOption = violationSearchableElement.options[violationSearchableElement.selectedIndex];
+            const violationType = selectedOption.dataset.type;
+            const violationText = selectedOption.textContent.split('(')[0].trim();
+            if(cheatedSubjectDiv){
+                if (violationText.toLowerCase().includes('cheating') || violationText.toLowerCase().includes('academic dishonesty')) { cheatedSubjectDiv.classList.remove('hidden'); }
+                else { cheatedSubjectDiv.classList.add('hidden'); const cheatedSubjectInput = document.getElementById('cheated_subject'); if(cheatedSubjectInput) cheatedSubjectInput.value = ''; }
+            }
+            const currentStudentId = tomStudentSelectInstance ? tomStudentSelectInstance.getValue() : null;
+            let minorOffenses = null;
+            if (currentStudentId) { minorOffenses = await fetchStudentOffenseInfo(currentStudentId); }
+            else { if(studentOffenseInfoEl) { studentOffenseInfoEl.classList.add('hidden'); studentOffenseInfoEl.textContent = '';} }
+            if (violationType === 'Minor' && currentStudentId) {
+                if (minorOffenses === null) { violationSeverityInfoEl.textContent = 'Select student to see offense context.'; violationSeverityInfoEl.className = 'text-xs text-orange-600 mt-1'; violationSeverityInfoEl.classList.remove('hidden'); }
+                else if (minorOffenses >= 2) { violationSeverityInfoEl.textContent = 'ALERT: This 3rd (or subsequent) Minor Offense will be treated as a MAJOR OFFENSE.'; violationSeverityInfoEl.className = 'text-xs text-red-600 font-bold mt-1'; violationSeverityInfoEl.classList.remove('hidden'); }
+                else { violationSeverityInfoEl.classList.add('hidden'); violationSeverityInfoEl.textContent = ''; }
+            } else if (violationType === 'Major') {
+                violationSeverityInfoEl.textContent = 'This is a MAJOR OFFENSE.'; violationSeverityInfoEl.className = 'text-xs text-red-600 font-bold mt-1'; violationSeverityInfoEl.classList.remove('hidden');
+            } else {
+                violationSeverityInfoEl.classList.add('hidden'); violationSeverityInfoEl.textContent = '';
+            }
+        }
+        const violationSelectForChange = document.getElementById('violation_id_searchable');
+        if(violationSelectForChange) violationSelectForChange.addEventListener('change', handleViolationChange);
+    }
+});
+</script>
+{% endblock %}

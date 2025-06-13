@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - Guidance Admin{% endblock %}
+
+{% block page_title %}System Settings{% endblock %}
+{% block page_subtitle %}Manage application settings and administrative tasks.{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    
+    {# Card for User Management #}
+    <a href="{{ url_for('views.user_list') }}"
+       class="block p-6 bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-200 ease-in-out group">
+        <div class="flex items-center justify-center w-12 h-12 bg-indigo-100 rounded-lg mb-4 group-hover:bg-indigo-200 transition-colors">
+            <i class="ri-group-2-line text-2xl text-indigo-600"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-slate-800 mb-1 group-hover:text-indigo-700 transition-colors">User Management</h3>
+        <p class="text-sm text-slate-500">Manage staff accounts and their roles.</p>
+    </a>
+
+    {# The "Violation Catalog" card has been completely removed from this file. #}
+
+</div>
+{% endblock %}

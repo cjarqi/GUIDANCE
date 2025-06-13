@@ -1,0 +1,363 @@
+{% extends "base.html" %}
+
+{% block title %}Student Offense Report - Guidance Admin{% endblock %}
+
+{% block page_title_bar %}
+<div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 no-print">
+    <div>
+        <h1 class="text-2xl font-semibold text-slate-800">Student Offense Report</h1>
+        <p class="text-sm text-slate-500">List of students with recorded offenses and summary counts within a specified date range.</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block head_extra %}
+<style>
+    /* --- START: FINAL PRINT STYLES --- */
+    @media print {
+        /* --- Page Layout and Hiding Elements --- */
+        @page {
+            size: A4 portrait;
+            margin: 0.75in;
+        }
+
+        body {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            background: #fff !important;
+        }
+
+        body > div > aside,
+        body > div > div[x-show="sidebarOpen"],
+        body > div > div > header,
+        body > div > div > main > div > div.no-print,
+        body > div > div > footer,
+        #filter-section,
+        #pagination-nav,
+        .actions-column,
+        .actions-cell {
+            display: none !important;
+        }
+        
+        @page {
+            @top-left { content: "" }
+            @top-right { content: "" }
+            @bottom-left { content: "" }
+            @bottom-right { content: "" }
+        }
+
+        body > div > div > main {
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow: visible !important;
+        }
+        
+        /* --- Header Styles --- */
+        #print-header {
+            display: flex !important;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        #print-header .logo {
+            width: 70px;
+            height: 70px;
+            flex-shrink: 0;
+        }
+        
+        #print-header .school-details {
+            margin-left: 15px;
+            text-align: left;
+        }
+
+        #print-header h1 {
+            font-size: 18pt;
+            font-weight: bold;
+            color: #000;
+            margin: 0;
+            padding: 0;
+            line-height: 1;
+        }
+
+        #print-header p {
+            font-size: 14pt;
+            color: #333;
+            margin: 5px 0 0 0;
+            padding: 0;
+        }
+
+        /* --- Sub-header for Filter Details --- */
+        #print-subheader {
+            display: block !important;
+            text-align: center;
+            margin-top: -10px;
+            margin-bottom: 25px;
+            border-top: 1px solid #888;
+            border-bottom: 1px solid #888;
+            padding: 8px 0;
+        }
+        
+        #print-subheader p {
+            margin: 0;
+            font-size: 11pt;
+            font-weight: bold;
+            color: #000;
+        }
+
+        #report-container, #report-container * {
+            visibility: visible !important;
+        }
+        #report-container {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+        }
+        .bg-white {
+            box-shadow: none !important;
+            border: none !important;
+        }
+        table {
+            width: 100%;
+            font-size: 9pt;
+            color: #000 !important;
+            border-collapse: collapse;
+        }
+        td {
+            color: #000 !important;
+            border: 1px solid #888 !important;
+            padding: 6px !important;
+            text-align: left;
+        }
+
+        /* --- START: THIS IS THE FIX --- */
+        th {
+            color: #000 !important;
+            border: 1px solid #888 !important;
+            padding: 6px !important;
+            text-align: left;
+            background-color: #f2f2f2 !important;
+            font-weight: bold;
+            font-size: 8.5pt; /* Make header font slightly smaller to fit text */
+            word-break: break-word; /* Allow long words to break and wrap */
+            hyphens: auto; /* Allow automatic hyphenation */
+            vertical-align: middle; /* Center text vertically if it wraps */
+        }
+        /* --- END: THIS IS THE FIX --- */
+
+        .text-center {
+            text-align: center !important;
+        }
+        tr {
+            page-break-inside: avoid;
+        }
+    }
+    /* --- END: FINAL PRINT STYLES --- */
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div id="report-container">
+    <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+        
+        <!-- START: PRINT-ONLY HEADER -->
+        <div id="print-header" class="hidden">
+            <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="School Logo" class="logo">
+            <div class="school-details">
+                <h1>PADRE GARCIA POLYTECHNIC COLLEGE</h1>
+                <p>Student Offense Report</p>
+                <p>Students with offenses</p>
+            </div>
+        </div>
+        
+        <!-- START: NEW PRINT-ONLY SUBHEADER FOR FILTERS -->
+        <div id="print-subheader" class="hidden">
+            {% if applied_filters %}
+                <p>
+                {% set parts = [] %}
+                {% if applied_filters['Program'] %}
+                    {% set _ = parts.append(applied_filters['Program']) %}
+                {% endif %}
+                {% if applied_filters['Year & Section'] %}
+                    {% set _ = parts.append('Year & Section: ' + applied_filters['Year & Section']) %}
+                {% endif %}
+                {{ parts | join(' - ') }}
+                </p>
+            {% else %}
+                <p>Overall Report (All Programs and Sections)</p>
+            {% endif %}
+        </div>
+        <!-- END: NEW PRINT-ONLY SUBHEADER FOR FILTERS -->
+    
+        <div class="px-5 py-4 border-b border-slate-200" id="filter-section">
+            <form method="GET" action="{{ url_for('views.report_students_with_offenses') }}" class="mb-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-x-4 gap-y-3 items-end">
+                    <div>
+                        <label for="filter_program" class="block text-xs font-medium text-slate-600 mb-1">Program</label>
+                        <select id="filter_program" name="program"
+                                class="block w-full h-9 px-3 text-sm border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                            <option value="">All Programs</option>
+                            {% for prog in programs_for_filter %}
+                                <option value="{{ prog.id }}" {% if prog.id|string == request.args.get('program') %}selected{% endif %}>
+                                    {{ prog.program_name }} ({{ prog.program_code }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filter_year_section" class="block text-xs font-medium text-slate-600 mb-1">Year & Section</label>
+                        <input type="text" id="filter_year_section" name="year_section_query" value="{{ request.args.get('year_section_query', '') }}"
+                               placeholder="e.g., 1A, 2B"
+                               class="block w-full h-9 px-3 text-sm border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                    </div>
+                    <div>
+                        <label for="filter_min_offenses" class="block text-xs font-medium text-slate-600 mb-1">Min. Total Offenses</label>
+                        <input type="number" id="filter_min_offenses" name="min_offenses" value="{{ request.args.get('min_offenses', '1') }}" min="0"
+                               class="block w-full h-9 px-3 text-sm border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                    </div>
+                    <div>
+                        <label for="filter_offense_date_from" class="block text-xs font-medium text-slate-600 mb-1">Offense Date From</label>
+                        <input type="date" id="filter_offense_date_from" name="offense_date_from" value="{{ request.args.get('offense_date_from', '') }}"
+                               class="block w-full h-9 px-3 text-sm border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                    </div>
+                    <div>
+                        <label for="filter_offense_date_to" class="block text-xs font-medium text-slate-600 mb-1">Offense Date To</label>
+                        <input type="date" id="filter_offense_date_to" name="offense_date_to" value="{{ request.args.get('offense_date_to', '') }}"
+                               class="block w-full h-9 px-3 text-sm border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                    </div>
+                    <div class="flex space-x-2 sm:col-span-2 lg:col-span-1 xl:col-span-2 self-end xl:justify-self-start"> 
+                        <button type="submit"
+                                class="w-full sm:w-auto py-2 px-4 bg-indigo-600 text-white rounded-lg font-medium text-sm flex items-center justify-center hover:bg-indigo-700 transition shadow-sm">
+                            <i class="ri-filter-3-line mr-2"></i>Filter
+                        </button>
+                        <a href="{{ url_for('views.report_students_with_offenses') }}"
+                           class="w-full sm:w-auto py-2 px-4 border border-slate-300 text-slate-700 bg-white rounded-lg font-medium text-sm flex items-center justify-center hover:bg-slate-50 transition shadow-sm"
+                           title="Clear Filters">
+                            <i class="ri-refresh-line"></i>
+                        </a>
+                        <!-- PRINT BUTTON -->
+                        <button type="button" id="print-report-btn"
+                                class="w-full sm:w-auto py-2 px-4 bg-teal-600 text-white rounded-lg font-medium text-sm flex items-center justify-center hover:bg-teal-700 transition shadow-sm">
+                            <i class="ri-printer-line mr-2"></i>Print
+                        </button>
+                    </div>
+                </div>
+            </form>
+             
+            <!-- APPLIED FILTERS DISPLAY (for screen) -->
+            {% if applied_filters %}
+            <div class="mb-4 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                <p class="font-semibold text-sm text-slate-800 mb-2">Active Filters:</p>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1 text-sm text-slate-600">
+                {% for key, value in applied_filters.items() %}
+                    <div><strong>{{ key }}:</strong> <span>{{ value }}</span></div>
+                {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+             <h3 class="font-semibold text-slate-700 mb-2 sm:mb-0">
+                {% if request.args %}Filtered Report{% else %}Student Offense Summary{% endif %}
+            </h3>
+        </div>
+    
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th scope="col" class="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Student ID</th>
+                        <th scope="col" class="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Full Name</th>
+                        <th scope="col" class="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Program</th>
+                        <th scope="col" class="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Year & Section</th>
+                        <th scope="col" class="px-5 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Total Incidents (Filtered)</th>
+                        <th scope="col" class="px-5 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Minor Offenses (Filtered)</th>
+                        <th scope="col" class="px-5 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Major Offenses (Filtered)</th>
+                        <th scope="col" class="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider actions-column">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-slate-200">
+                    {% if students_report_data %}
+                        {% for data_item in students_report_data %}
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="px-5 py-3 whitespace-nowrap text-sm text-slate-600">{{ data_item.student.student_number }}</td>
+                            <td class="px-5 py-3 whitespace-nowrap text-sm font-medium text-slate-800">{{ data_item.student.last_name }}, {{ data_item.student.first_name }}</td>
+                            <td class="px-5 py-3 whitespace-nowrap text-sm text-slate-600">{{ data_item.student.program.program_code if data_item.student.program else 'N/A' }}</td>
+                            <td class="px-5 py-3 whitespace-nowrap text-sm text-slate-600">{{ data_item.student.year_section }}</td>
+                            <td class="px-5 py-3 whitespace-nowrap text-sm text-slate-600 text-center">{{ data_item.total_incidents }}</td>
+                            <td class="px-5 py-3 whitespace-nowrap text-sm text-slate-600 text-center">{{ data_item.minor_offenses }}</td>
+                            <td class="px-5 py-3 whitespace-nowrap text-sm text-slate-600 text-center font-semibold {% if data_item.major_offenses > 0 %}text-red-600{% endif %}">{{ data_item.major_offenses }}</td>
+                            <td class="px-5 py-3 whitespace-nowrap text-sm font-medium actions-cell">
+                                <a href="{{ url_for('views.student_profile', student_id=data_item.student.id) }}" class="text-indigo-600 hover:text-indigo-800" title="View Student Profile">
+                                    <i class="ri-eye-line"></i> View Profile
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center py-10 text-slate-500 text-sm">
+                                No students found matching the criteria or no offenses recorded.
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="px-5 py-4 border-t border-slate-200" id="pagination-nav">
+        {% if pagination and pagination.pages > 1 %}
+            <nav class="flex items-center justify-between">
+                <div class="text-sm text-slate-500">
+                    Page {{ pagination.page }} of {{ pagination.pages }} 
+                    (Showing {{ students_report_data|length }} of {{ pagination.total }} students)
+                </div>
+                <div class="flex space-x-1">
+                    {% set query_params = request.args.to_dict() %}
+                    {% if 'page' in query_params %}{% set _ = query_params.pop('page') %}{% endif %}
+    
+                    {% if pagination.has_prev %}
+                        <a href="{{ url_for('views.report_students_with_offenses', page=pagination.prev_num, **query_params) }}"
+                           class="px-3 py-1.5 border border-slate-300 bg-white text-slate-600 rounded-md text-sm hover:bg-slate-50">Previous</a>
+                    {% else %}
+                        <span class="px-3 py-1.5 border border-slate-200 bg-slate-100 text-slate-400 rounded-md text-sm cursor-not-allowed">Previous</span>
+                    {% endif %}
+                    {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                        {% if page_num %}
+                            {% if pagination.page == page_num %}
+                                <span class="px-3 py-1.5 border border-indigo-500 bg-indigo-500 text-white rounded-md text-sm">{{ page_num }}</span>
+                            {% else %}
+                                <a href="{{ url_for('views.report_students_with_offenses', page=page_num, **query_params) }}"
+                                   class="px-3 py-1.5 border border-slate-300 bg-white text-slate-600 rounded-md text-sm hover:bg-slate-50">{{ page_num }}</a>
+                            {% endif %}
+                        {% else %}
+                            <span class="px-3 py-1.5 text-slate-400">...</span>
+                        {% endif %}
+                    {% endfor %}
+                    {% if pagination.has_next %}
+                        <a href="{{ url_for('views.report_students_with_offenses', page=pagination.next_num, **query_params) }}"
+                           class="px-3 py-1.5 border border-slate-300 bg-white text-slate-600 rounded-md text-sm hover:bg-slate-50">Next</a>
+                    {% else %}
+                        <span class="px-3 py-1.5 border border-slate-200 bg-slate-100 text-slate-400 rounded-md text-sm cursor-not-allowed">Next</span>
+                    {% endif %}
+                </div>
+            </nav>
+        {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block body_end_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const printButton = document.getElementById('print-report-btn');
+    if (printButton) {
+        printButton.addEventListener('click', function() {
+            window.print();
+        });
+    }
+});
+</script>
+{% endblock %}

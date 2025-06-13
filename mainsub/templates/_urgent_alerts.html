@@ -1,0 +1,35 @@
+{# GUIDANCE/mainsub/templates/_urgent_alerts.html #}
+<div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
+    <div class="px-5 py-4 border-b border-slate-200 flex justify-between items-center">
+        <h3 class="font-semibold text-slate-700">Urgent Alerts</h3>
+        {# MODIFIED "View All" Link #}
+        <a href="{{ url_for('views.incident_records_list', alert_trigger='urgent_major_review') }}"
+           class="text-sm text-indigo-600 hover:text-indigo-700 font-medium">View All</a>
+    </div>
+    <div class="p-5 space-y-4">
+        {% if urgent_alerts %}
+            {% for alert in urgent_alerts %}
+            {% set alert_colors_map = {
+                'major_review': {'border': 'border-red-500', 'bg': 'bg-red-50', 'icon_text': 'text-red-500', 'title_text': 'text-red-800', 'msg_text': 'text-red-700'},
+                'at_risk': {'border': 'border-amber-500', 'bg': 'bg-amber-50', 'icon_text': 'text-amber-500', 'title_text': 'text-amber-800', 'msg_text': 'text-amber-700'},
+                'info': {'border': 'border-blue-500', 'bg': 'bg-blue-50', 'icon_text': 'text-blue-500', 'title_text': 'text-blue-800', 'msg_text': 'text-blue-700'}
+            } %}
+            {% set colors = alert_colors_map.get(alert.type, alert_colors_map.info) %}
+            <div class="{{ colors.bg }} border-l-4 {{ colors.border }} p-4 rounded-lg">
+                <div class="flex">
+                    <div class="flex-shrink-0 w-5 h-5 flex items-center justify-center {{ colors.icon_text }}">
+                        <i class="ri-{{ alert.icon | default('information-line') }} text-xl"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium {{ colors.title_text }}">{{ alert.title }}</p>
+                        <p class="text-sm {{ colors.msg_text }} mt-1">{{ alert.message }}</p>
+                        {% if alert.details %}<p class="text-xs {{ colors.msg_text | replace('700', '600') | replace('800', '700') }} mt-2">{{ alert.details }}</p>{% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p class="text-sm text-slate-500 text-center py-6">No urgent alerts at this time.</p>
+        {% endif %}
+    </div>
+</div>

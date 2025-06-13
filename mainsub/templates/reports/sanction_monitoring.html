@@ -1,0 +1,456 @@
+{% extends "base.html" %}
+
+{% block title %}Sanction Monitoring Report - Guidance Admin{% endblock %}
+
+{% block page_title_bar %}
+<div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 no-print">
+    <div>
+        <h1 class="text-2xl font-semibold text-slate-800">Sanction Monitoring Report</h1>
+        <p class="text-sm text-slate-500">Track the status of assigned sanctions.</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block head_extra %}
+<style>
+    @media print {
+        /* Hide all elements that should not be printed */
+        .no-print,
+        body > div > aside,
+        body > div > div > header,
+        body > div > div > main > div > .no-print,
+        body > div > div > footer,
+        nav,
+        .pagination,
+        button,
+        form {
+            display: none !important;
+        }
+
+        /* Remove browser-generated headers and footers */
+        @page {
+            size: landscape;
+            margin: 0.5in;
+            /* Remove default browser headers/footers */
+            margin-top: 0.5in;
+            margin-bottom: 0.5in;
+            /* Hide URL and page numbers */
+            @top-left { content: ""; }
+            @top-center { content: ""; }
+            @top-right { content: ""; }
+            @bottom-left { content: ""; }
+            @bottom-center { content: ""; }
+            @bottom-right { content: ""; }
+        }
+
+        /* Additional browser-specific fixes */
+        html {
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
+        }
+
+        /* Reset body and main container */
+        body {
+            background: #fff !important;
+            font-family: Arial, sans-serif !important;
+            color: #000 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        body > div > div > main {
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow: visible !important;
+        }
+
+        /* Show print header */
+        #print-header-content {
+            display: block !important;
+            margin-bottom: 20px !important;
+        }
+
+        /* Header styling to match the image */
+        #print-header-content h1 {
+            font-size: 16pt !important;
+            font-weight: bold !important;
+            margin: 0 !important;
+            color: #000 !important;
+        }
+
+        #print-header-content p {
+            font-size: 12pt !important;
+            margin: 5px 0 0 0 !important;
+            color: #000 !important;
+        }
+
+        /* Filter info styling */
+        #print-header-content div[style*="text-align: center"] {
+            text-align: center !important;
+            margin-bottom: 20px !important;
+            border-top: 2px solid #000 !important;
+            border-bottom: 2px solid #000 !important;
+            padding: 8px 0 !important;
+        }
+
+        #print-header-content div[style*="text-align: center"] p {
+            margin: 0 !important;
+            font-size: 10pt !important;
+            font-weight: bold !important;
+            color: #000 !important;
+        }
+
+        /* Table container */
+        .overflow-x-auto {
+            overflow: visible !important;
+        }
+
+        /* Main table styling to match the image exactly */
+        table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            font-size: 8pt !important;
+            margin: 0 !important;
+            page-break-inside: auto !important;
+        }
+
+        /* Table headers */
+        thead tr {
+            background-color: #f8f9fa !important;
+        }
+
+        th {
+            border: 1px solid #000 !important;
+            padding: 6px 4px !important;
+            text-align: left !important;
+            font-weight: bold !important;
+            font-size: 8pt !important;
+            color: #000 !important;
+            background-color: #f8f9fa !important;
+            vertical-align: top !important;
+        }
+
+        /* Table cells */
+        td {
+            border: 1px solid #000 !important;
+            padding: 4px !important;
+            text-align: left !important;
+            font-size: 8pt !important;
+            color: #000 !important;
+            vertical-align: top !important;
+            word-wrap: break-word !important;
+            max-width: 120px !important;
+        }
+
+        /* Remove all links styling and make them plain text */
+        td a {
+            color: #000 !important;
+            text-decoration: none !important;
+        }
+
+        /* Remove status badges styling */
+        .px-2\.5,
+        .py-0\.5,
+        .inline-flex,
+        .text-xs,
+        .leading-5,
+        .font-semibold,
+        .rounded-full,
+        .bg-green-100,
+        .text-green-800,
+        .bg-red-100,
+        .text-red-800,
+        .bg-yellow-100,
+        .text-yellow-800 {
+            background: none !important;
+            color: #000 !important;
+            padding: 0 !important;
+            border-radius: 0 !important;
+            font-weight: normal !important;
+        }
+
+        /* Specific column widths to match the image */
+        th:nth-child(1),
+        td:nth-child(1) {
+            /* Incident ID */
+            width: 8% !important;
+        }
+
+        th:nth-child(2),
+        td:nth-child(2) {
+            /* Student */
+            width: 12% !important;
+        }
+
+        th:nth-child(3),
+        td:nth-child(3) {
+            /* Violation */
+            width: 15% !important;
+        }
+
+        th:nth-child(4),
+        td:nth-child(4) {
+            /* Assigned */
+            width: 10% !important;
+        }
+
+        th:nth-child(5),
+        td:nth-child(5) {
+            /* Sanction Details */
+            width: 20% !important;
+        }
+
+        th:nth-child(6),
+        td:nth-child(6) {
+            /* Due Date */
+            width: 10% !important;
+        }
+
+        th:nth-child(7),
+        td:nth-child(7) {
+            /* Status */
+            width: 10% !important;
+        }
+
+        th:nth-child(8),
+        td:nth-child(8) {
+            /* Completed On */
+            width: 15% !important;
+        }
+
+        /* Handle page breaks */
+        tr {
+            page-break-inside: avoid !important;
+        }
+
+        /* Remove any background colors from table rows */
+        tbody tr {
+            background: #fff !important;
+        }
+
+        tbody tr:hover {
+            background: #fff !important;
+        }
+
+        /* Remove any shadows or rounded corners */
+        .bg-white,
+        .rounded-xl,
+        .shadow-lg {
+            background: #fff !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+        }
+
+        /* Ensure text wrapping in cells */
+        td div {
+            word-wrap: break-word !important;
+            overflow-wrap: break-word !important;
+        }
+
+        /* Style the sanction details properly */
+        td div.font-medium {
+            font-weight: bold !important;
+            font-size: 8pt !important;
+        }
+
+        td div.text-xs {
+            font-size: 7pt !important;
+            color: #666 !important;
+            margin-top: 2px !important;
+        }
+    }
+
+    /* Additional fix for webkit browsers */
+    @media print and (-webkit-min-device-pixel-ratio: 0) {
+        table {
+            border-collapse: separate !important;
+            border-spacing: 0 !important;
+        }
+
+        th,
+        td {
+            border-right: 1px solid #000 !important;
+            border-bottom: 1px solid #000 !important;
+        }
+
+        th:first-child,
+        td:first-child {
+            border-left: 1px solid #000 !important;
+        }
+
+        thead tr:first-child th {
+            border-top: 1px solid #000 !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="report-content">
+    <div id="print-header-content" class="hidden">
+        <div style="display: flex; align-items: center; margin-bottom: 20px;">
+            <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="School Logo" style="width: 70px; height: 70px;">
+            <div style="margin-left: 20px;">
+                <h1 style="font-size: 18pt; font-weight: bold; margin: 0;">PADRE GARCIA POLYTECHNIC COLLEGE</h1>
+                <p style="font-size: 14pt; margin: 5px 0 0 0;">Sanction Monitoring Report</p>
+            </div>
+        </div>
+        <div style="text-align: center; margin-bottom: 25px; border-top: 1px solid #888; border-bottom: 1px solid #888; padding: 8px 0;">
+            {% if applied_filters %}
+                <p style="margin: 0; font-size: 11pt; font-weight: bold;">
+                {% set parts = [] %}
+                {% for key, value in applied_filters.items() %}
+                    {% set _ = parts.append(key + ': ' + value) %}
+                {% endfor %}
+                {{ parts | join(' | ') }}
+                </p>
+            {% else %}
+                <p style="margin: 0; font-size: 11pt; font-weight: bold;">Overall Report (All Sanctions)</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-200 no-print">
+            <form method="GET" action="{{ url_for('views.report_sanction_monitoring') }}" class="mb-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 items-end">
+                    <div>
+                        <label for="filter_student" class="block text-xs font-medium text-slate-600 mb-1">Student Name/ID</label>
+                        <input type="text" id="filter_student" name="student_query" value="{{ request.args.get('student_query', '') }}"
+                               placeholder="Name or ID"
+                               class="block w-full h-9 px-3 text-sm border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                    </div>
+                    <div>
+                        <label for="filter_sanction_type" class="block text-xs font-medium text-slate-600 mb-1">Sanction Type</label>
+                        <input type="text" id="filter_sanction_type" name="sanction_type_query" value="{{ request.args.get('sanction_type_query', '') }}"
+                               placeholder="e.g., Suspension, Service"
+                               class="block w-full h-9 px-3 text-sm border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                    </div>
+                    <div>
+                        <label for="filter_completion_status" class="block text-xs font-medium text-slate-600 mb-1">Completion Status</label>
+                        <select id="filter_completion_status" name="completion_status"
+                                class="block w-full h-9 px-3 text-sm border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                            <option value="">All</option>
+                            <option value="Pending" {% if request.args.get('completion_status') == 'Pending' %}selected{% endif %}>Pending</option>
+                            <option value="Completed" {% if request.args.get('completion_status') == 'Completed' %}selected{% endif %}>Completed</option>
+                            <option value="Overdue" {% if request.args.get('completion_status') == 'Overdue' %}selected{% endif %}>Overdue</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filter_due_date_from" class="block text-xs font-medium text-slate-600 mb-1">Due Date From</label>
+                        <input type="date" id="filter_due_date_from" name="due_date_from" value="{{ request.args.get('due_date_from', '') }}"
+                               class="block w-full h-9 px-3 text-sm border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                    </div>
+                     <div class="flex space-x-2">
+                        <button type="submit"
+                                class="w-full sm:w-auto py-2 px-4 bg-indigo-600 text-white rounded-lg font-medium text-sm flex items-center justify-center hover:bg-indigo-700 transition shadow-sm">
+                            <i class="ri-filter-3-line mr-2"></i>Filter
+                        </button>
+                        <a href="{{ url_for('views.report_sanction_monitoring') }}"
+                           class="w-full sm:w-auto py-2 px-4 border border-slate-300 text-slate-700 bg-white rounded-lg font-medium text-sm flex items-center justify-center hover:bg-slate-50 transition shadow-sm"
+                           title="Clear Filters">
+                            <i class="ri-refresh-line"></i>
+                        </a>
+                        <button type="button" id="print-button"
+                                class="w-full sm:w-auto py-2 px-4 bg-teal-600 text-white rounded-lg font-medium text-sm flex items-center justify-center hover:bg-teal-700 transition shadow-sm">
+                            <i class="ri-printer-line mr-2"></i>Print
+                        </button>
+                    </div>
+                </div>
+            </form>
+            {% if applied_filters %}
+            <div class="mb-4 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                <p class="font-semibold text-sm text-slate-800 mb-2">Active Filters:</p>
+                <!-- Active Filters Display -->
+            </div>
+            {% endif %}
+             <h3 class="font-semibold text-slate-700 mb-2 sm:mb-0">
+                {% if request.args %}Filtered Sanctions{% else %}All Assigned Sanctions{% endif %}
+            </h3>
+        </div>
+    
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Incident ID</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Student</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Violation</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Assigned</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Sanction Details</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Due Date</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Completed On</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-slate-200">
+                    {% if pagination and pagination.items %}
+                        {% for sanction_item in pagination.items %}
+                        {% set incident_item = sanction_item.incident %}
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="px-4 py-3 whitespace-nowrap text-sm"><a href="{{ url_for('views.incident_details', incident_id=incident_item.id) }}" class="text-indigo-600 hover:underline">#{{ incident_item.id }}</a></td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm"><a href="{{ url_for('views.student_profile', student_id=incident_item.student.id) }}" class="text-indigo-600 hover:underline">{{ incident_item.student.last_name }}, {{ incident_item.student.first_name }}</a></td>
+                            <td class="px-4 py-3 text-sm text-slate-600">{{ incident_item.violation.description | truncate(30) if incident_item.violation else 'N/A' }}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-slate-500">{{ sanction_item.date_assigned.strftime('%b %d, %Y') if sanction_item.date_assigned else 'N/A' }}</td>
+                            <td class="px-4 py-3 text-sm text-slate-600">
+                                <div class="font-medium">{{ sanction_item.sanction_type }}</div>
+                                <div class="text-xs text-slate-500">{{ sanction_item.sanction_details | truncate(40) }}</div>
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm {% if sanction_item.due_date and not sanction_item.completion_date and sanction_item.due_date.date() < today %}text-red-600 font-semibold{% else %}text-slate-500{% endif %}">
+                                {{ sanction_item.due_date.strftime('%b %d, %Y') if sanction_item.due_date else 'N/A' }}
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm">
+                                {% if sanction_item.completion_date %}
+                                    <span class="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Completed</span>
+                                {% elif sanction_item.due_date and sanction_item.due_date.date() < today %}
+                                    <span class="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Overdue</span>
+                                {% else %}
+                                    <span class="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-slate-500">{{ sanction_item.completion_date.strftime('%b %d, %Y') if sanction_item.completion_date else 'N/A' }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr><td colspan="8" class="text-center py-10 text-slate-500 text-sm">No sanctions found matching the criteria.</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="px-5 py-4 border-t border-slate-200 no-print">
+           <!-- Pagination here -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block body_end_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const printButton = document.getElementById('print-button');
+    if (printButton) {
+        printButton.addEventListener('click', function() {
+            // Show a brief instruction for users about browser settings
+            const userAgent = navigator.userAgent;
+            let instruction = '';
+            
+            if (userAgent.includes('Chrome')) {
+                instruction = 'For best results: In print dialog, go to "More settings" and uncheck "Headers and footers"';
+            } else if (userAgent.includes('Firefox')) {
+                instruction = 'For best results: In print dialog, go to "Page Setup" and uncheck "Headers and Footers"';
+            } else if (userAgent.includes('Safari')) {
+                instruction = 'For best results: In print dialog, click "Show Details" and set Headers & Footer to "Blank"';
+            }
+            
+            if (instruction && !localStorage.getItem('printInstructionShown')) {
+                alert(instruction);
+                localStorage.setItem('printInstructionShown', 'true');
+            }
+            
+            window.print();
+        });
+    }
+});
+</script>
+{% endblock %}

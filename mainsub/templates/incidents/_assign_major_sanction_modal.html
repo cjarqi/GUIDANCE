@@ -1,0 +1,86 @@
+{# GUIDANCE/mainsub/templates/incidents/_assign_major_sanction_modal.html #}
+<div id="assignMajorSanctionModal"
+     class="fixed inset-0 bg-slate-900 bg-opacity-50 z-50 flex items-center justify-center p-4 hidden transition-opacity duration-300 ease-in-out opacity-0"
+     aria-labelledby="assign-major-sanction-modal-title" role="dialog" aria-modal="true">
+
+    <div id="assignMajorSanctionModalContent"
+         class="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col transform transition-all duration-300 ease-in-out scale-95 opacity-0">
+        <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+            <h3 id="assign-major-sanction-modal-title" class="text-lg font-semibold text-slate-800">Assign Major Sanction</h3>
+            <button type="button" id="closeAssignMajorSanctionModalBtn"
+                    class="w-8 h-8 flex items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+                    aria-label="Close modal">
+                <i class="ri-close-line text-xl"></i>
+            </button>
+        </div>
+
+        <div class="p-6 overflow-y-auto flex-1 space-y-4">
+            <div class="mb-4 p-3 bg-slate-50 rounded-lg border border-slate-200 text-sm">
+                <p><strong>Student:</strong> <span id="ams_modal_student_name"></span></p>
+                <p><strong>Violation:</strong> <span id="ams_modal_violation_desc"></span> (<span id="ams_modal_violation_code"></span>)</p>
+                <p><strong>Date Committed:</strong> <span id="ams_modal_date_committed"></span></p>
+                <p class="mt-1"><strong>Details:</strong> <span id="ams_modal_incident_details" class="block max-h-20 overflow-y-auto"></span></p>
+            </div>
+
+            <div id="ams_modal_repeat_major_warning" class="hidden mb-4 p-4 bg-red-100 border-l-4 border-red-500 text-red-700 rounded-md" role="alert">
+                <div class="flex">
+                    <div class="flex-shrink-0"><i class="ri-alert-fill text-2xl text-red-500"></i></div>
+                    <div class="ml-3">
+                        <p class="font-bold text-md">CRITICAL: Second (or Subsequent) Major Offense!</p>
+                        <p class="text-sm mt-1">This student has prior major offense(s). Per handbook guidelines (e.g., p.41, item 23: "Commission of a second major offense"), the following sanctions are typically considered: <strong class="font-semibold">Non-Readmission, Exclusion, or Expulsion.</strong> Please review the handbook carefully.</p>
+                    </div>
+                </div>
+            </div>
+
+            <form id="assignMajorSanctionForm" method="POST"> 
+                <input type="hidden" id="ams_incident_id" name="incident_id">
+                <input type="hidden" id="ams_is_repeat_major_status_for_form" name="is_repeat_major_status">
+
+                <div>
+                    <label for="ams_sanction_type" class="block text-sm font-medium text-slate-700 mb-1">Sanction Category <span class="text-red-500">*</span></label>
+                    <select id="ams_sanction_type" name="sanction_type" required
+                            class="block w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg shadow-sm
+                                   focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        <option value="" disabled selected>Select sanction category...</option>
+                        <option value="Suspension">Suspension</option>
+                        <option value="Probation">Probation</option>
+                        <option value="Financial Penalty / Restitution">Financial Penalty / Restitution</option>
+                        <option value="Non-Readmission" class="font-semibold text-amber-700">Non-Readmission (Severe)</option>
+                        <option value="Exclusion" class="font-semibold text-red-700">Exclusion (Grave)</option>
+                        <option value="Expulsion" class="font-semibold text-red-700">Expulsion (Grave)</option>
+                        <option value="Other Specified Sanction">Other Specified Sanction</option>
+                    </select>
+                </div>
+
+                <div class="mt-4">
+                    <label for="ams_sanction_details" class="block text-sm font-medium text-slate-700 mb-1">Specific Sanction Details & Duration <span class="text-red-500">*</span></label>
+                    <textarea id="ams_sanction_details" name="sanction_details" rows="3" required
+                              class="block w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg shadow-sm resize-y
+                                     focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                              placeholder="e.g., Suspension for 20 school days; Non-Readmission for 1 academic year. Be specific."></textarea>
+                    <p class="text-xs text-slate-500 mt-1">Refer to Student Handbook for guidelines (e.g., pp. 40-41).</p>
+                </div>
+                
+                <div class="mt-4">
+                    <label for="ams_due_date" class="block text-sm font-medium text-slate-700 mb-1">Due Date (e.g., for payment, service completion)</label>
+                    <input type="date" id="ams_due_date" name="due_date"
+                           class="block w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg shadow-sm
+                                  focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                </div>
+
+                <div class="mt-4">
+                    <label for="ams_notes" class="block text-sm font-medium text-slate-700 mb-1">Decision Maker Notes (Optional)</label>
+                    <textarea id="ams_notes" name="notes" rows="2"
+                              class="block w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg shadow-sm resize-y
+                                     focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                              placeholder="e.g., Deliberation by SGB on [date], Approved by College President. Second major offense considered."></textarea>
+                </div>
+            </form>
+        </div>
+
+        <div class="px-6 py-4 border-t border-slate-200 bg-slate-50 flex justify-end space-x-3">
+            <button type="button" id="cancelAssignMajorSanctionModalBtn" class="px-4 py-2 border border-slate-300 text-slate-700 bg-white rounded-lg text-sm font-medium hover:bg-slate-50 transition shadow-sm">Cancel</button>
+            <button type="submit" form="assignMajorSanctionForm" class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">Assign Sanction</button>
+        </div>
+    </div>
+</div>

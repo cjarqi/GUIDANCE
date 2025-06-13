@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Guidance System</title>
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.2.0/remixicon.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+    <style> 
+        .login-background {
+            background-image: url("{{ url_for('static', filename='images/background.jpg') }}");
+            background-size: cover;
+            background-position: center;
+        }
+        body { font-family: 'Inter', sans-serif; } 
+        .brand-font { font-family: 'Poppins', sans-serif; font-weight: 700; } 
+        .input-with-icon { position: relative; }
+        .input-with-icon .icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #d1d5db; /* gray-300 */
+        }
+        .input-with-icon input {
+            padding-left: 3rem;
+        }
+    </style>
+</head>
+<body class="h-full">
+    <div class="relative min-h-screen login-background flex items-center justify-center p-4">
+        <!-- Dark overlay for better text contrast -->
+        <div class="absolute inset-0 bg-slate-900 bg-opacity-50"></div>
+        
+        <!-- START: CORRECTED GLASSMORPHISM CARD -->
+        <div class="relative w-full max-w-md bg-slate-800/60 backdrop-blur-lg border border-white/20 rounded-2xl shadow-2xl p-8 text-white">
+        <!-- END: CORRECTED GLASSMORPHISM CARD -->
+
+            <div class="text-center mb-8">
+                <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="School Logo" class="w-16 h-16 mx-auto mb-4 rounded-full shadow-lg">
+                <h1 class="text-3xl brand-font tracking-tight">Guidance</h1>
+                <p class="text-sm text-white/70 mt-1">Student Conduct Management System</p>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                    <div class="mb-4 p-3 text-sm rounded-lg flex items-start text-center
+                        {% if category == 'error' %} bg-red-500/30 text-red-200 border border-red-500/50
+                        {% else %} bg-blue-500/30 text-blue-200 border border-blue-500/50 {% endif %}"
+                         role="alert">
+                         <i class="ri-information-line text-xl mr-3"></i>
+                        <span>{{ message }}</span>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="{{ url_for('auth.login_post') }}" class="space-y-6">
+                <div>
+                    <label for="username" class="block text-sm font-medium text-white/80 mb-2">Username</label>
+                    <div class="input-with-icon">
+                        <i class="icon ri-user-line"></i>
+                        <input type="text" id="username" name="username" required placeholder="Enter your username"
+                               class="block w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg shadow-sm
+                                      placeholder-white/50 text-white focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition">
+                    </div>
+                </div>
+                <div>
+                    <label for="password" class="block text-sm font-medium text-white/80 mb-2">Password</label>
+                    <div class="input-with-icon">
+                        <i class="icon ri-lock-password-line"></i>
+                        <input type="password" id="password" name="password" required placeholder="Enter your password"
+                               class="block w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg shadow-sm
+                                      placeholder-white/50 text-white focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition">
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-between text-sm">
+                    <label for="remember-me" class="flex items-center cursor-pointer">
+                        <input id="remember-me" name="remember-me" type="checkbox"
+                               class="h-4 w-4 bg-white/20 text-indigo-500 border-white/30 rounded focus:ring-indigo-500 focus:ring-offset-0">
+                        <span class="ml-2 text-white/80">Remember me</span>
+                    </label>
+                    <a href="{{ url_for('auth.reset_request') }}" class="font-medium text-indigo-300 hover:text-indigo-200">Forgot password?</a>
+                </div>
+                
+                <div>
+                    <button type="submit"
+                            class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-lg
+                                   text-base font-semibold text-white bg-gradient-to-r from-indigo-500 to-purple-600 
+                                   hover:from-indigo-600 hover:to-purple-700
+                                   focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-indigo-500
+                                   transition-all transform hover:scale-105">
+                        Sign In
+                    </button>
+                </div>
+            </form>
+            <p class="text-center text-xs text-white/50 mt-8">
+                © {{ year }} Guidance Department. All rights reserved.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,16 @@
+<!--templates/placeholder.html-->
+{% extends "base.html" %}
+
+{% block title %}{{ page_name }} - Guidance Admin{% endblock %}
+
+{% block page_title %}{{ page_name }}{% endblock %}
+{% block page_subtitle %}This page is under construction.{% endblock %}
+
+{% block content %}
+    <div class="bg-white p-6 rounded-xl shadow-lg">
+        <p class="text-slate-600">The content for the "{{ page_name }}" page will be available soon.</p>
+        <a href="{{ url_for('views.dashboard') }}" class="mt-4 inline-block text-indigo-600 hover:text-indigo-700 font-medium">
+            ← Back to Dashboard
+        </a>
+    </div>
+{% endblock %}

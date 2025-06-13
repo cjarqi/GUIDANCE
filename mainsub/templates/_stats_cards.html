@@ -1,0 +1,21 @@
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+    {% set card_data = [
+        ('Active Incidents', active_incidents_count, 'ri-file-warning-line', 'bg-blue-100 text-blue-600'),
+        ('Pending Major Sanctions', pending_major_sanctions_count, 'ri-time-line', 'bg-amber-100 text-amber-600'),
+        ('Students at Risk', students_at_risk_count, 'ri-user-unfollow-line', 'bg-red-100 text-red-600')
+    ] %}
+
+    {% for title, count, icon, colors in card_data %}
+    <div class="bg-white rounded-xl shadow-lg p-5 hover:shadow-xl transition-shadow duration-300">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-slate-500 text-sm font-medium">{{ title }}</p>
+                <h3 class="text-3xl font-bold text-slate-800 mt-1">{{ count if count is not none else 'N/A' }}</h3>
+            </div>
+            <div class="w-12 h-12 rounded-full {{ colors.split(' ')[0] }} flex items-center justify-center">
+                <i class="{{ icon }} text-2xl {{ colors.split(' ')[1] }}"></i>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>

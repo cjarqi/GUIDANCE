@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}Violation Frequency Report - Guidance Admin{% endblock %}
+
+{% block page_title_bar %}
+<div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 no-print">
+    <div>
+        <h1 class="text-2xl font-semibold text-slate-800">Violation Frequency Report</h1>
+        <p class="text-sm text-slate-500">Summary of committed violations by type and frequency.</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block head_extra %}
+<style>
+    @media print {
+        /* This is the correct, simple CSS method */
+        .no-print {
+            display: none !important;
+        }
+        #page-title-bar-placeholder { /* This is a placeholder, a more robust solution is to hide parent containers */
+            display: none !important;
+        }
+        @page {
+            size: portrait;
+            margin: 0.75in;
+        }
+        body {
+            background: #fff !important;
+        }
+        .print-header-container {
+            display: block !important;
+        }
+        table {
+            width: 100%;
+            font-size: 9pt;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #333 !important;
+            padding: 6px !important;
+            text-align: left;
+            color: #000 !important;
+        }
+        th {
+            background-color: #f2f2f2 !important;
+        }
+        .bg-white {
+            box-shadow: none !important;
+            border: none !important;
+        }
+    }
+</style>
+{% endblock %}
+
+
+{% block content %}
+<!-- This container is hidden on screen and will be displayed for printing -->
+<div class="print-header-container" style="display: none;">
+    <div style="display: flex; align-items: center; margin-bottom: 20px;">
+        <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="School Logo" style="width: 70px; height: 70px;">
+        <div style="margin-left: 20px;">
+            <h1 style="font-size: 18pt; font-weight: bold; margin: 0;">PADRE GARCIA POLYTECHNIC COLLEGE</h1>
+            <p style="font-size: 14pt; margin: 5px 0 0 0;">Violation Frequency Report</p>
+        </div>
+    </div>
+    <div style="text-align: center; margin-bottom: 25px; border-top: 1px solid #888; border-bottom: 1px solid #888; padding: 8px 0;">
+        {% if applied_filters %}
+            <p style="margin: 0; font-size: 11pt; font-weight: bold;">
+            {% set parts = [] %}
+            {% for key, value in applied_filters.items() %}
+                {% set _ = parts.append(key + ': ' + value) %}
+            {% endfor %}
+            {{ parts | join(' | ') }}
+            </p>
+        {% else %}
+            <p style="margin: 0; font-size: 11pt; font-weight: bold;">Overall Report</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- This is the main on-screen content -->
+<div class="bg-white rounded-xl shadow-lg overflow-hidden">
+    <div class="px-5 py-4 border-b border-slate-200 no-print">
+        <form method="GET" action="{{ url_for('views.report_violation_frequency') }}" class="mb-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                <div>
+                    <label for="filter_date_from" class="block text-xs font-medium text-slate-600 mb-1">Incidents From</label>
+                    <input type="date" id="filter_date_from" name="date_from" value="{{ request.args.get('date_from', '') }}"
+                           class="block w-full h-9 px-3 text-sm border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                </div>
+                <div>
+                    <label for="filter_date_to" class="block text-xs font-medium text-slate-600 mb-1">Incidents To</label>
+                    <input type="date" id="filter_date_to" name="date_to" value="{{ request.args.get('date_to', '') }}"
+                           class="block w-full h-9 px-3 text-sm border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                </div>
+                <div>
+                    <label for="filter_violation_type" class="block text-xs font-medium text-slate-600 mb-1">Violation Type</label>
+                    <select id="filter_violation_type" name="violation_type"
+                            class="block w-full h-9 px-3 text-sm border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        <option value="">All Types</option>
+                        <option value="Minor" {% if request.args.get('violation_type') == 'Minor' %}selected{% endif %}>Minor</option>
+                        <option value="Major" {% if request.args.get('violation_type') == 'Major' %}selected{% endif %}>Major</option>
+                    </select>
+                </div>
+                 <div class="flex space-x-2">
+                    <button type="submit"
+                            class="w-full sm:w-auto py-2 px-4 bg-indigo-600 text-white rounded-lg font-medium text-sm flex items-center justify-center hover:bg-indigo-700 transition shadow-sm">
+                        <i class="ri-filter-3-line mr-2"></i>Filter
+                    </button>
+                    <a href="{{ url_for('views.report_violation_frequency') }}"
+                       class="w-full sm:w-auto py-2 px-4 border border-slate-300 text-slate-700 bg-white rounded-lg font-medium text-sm flex items-center justify-center hover:bg-slate-50 transition shadow-sm"
+                       title="Clear Filters">
+                        <i class="ri-refresh-line"></i>
+                    </a>
+                    <button type="button" id="print-button" class="w-full sm:w-auto py-2 px-4 bg-teal-600 text-white rounded-lg font-medium text-sm flex items-center justify-center hover:bg-teal-700 transition shadow-sm"><i class="ri-printer-line mr-2"></i>Print</button>
+                </div>
+            </div>
+        </form>
+         <h3 class="font-semibold text-slate-700 mb-2 sm:mb-0">
+            {% if request.args.get('date_from') or request.args.get('date_to') or request.args.get('violation_type') %}Filtered Report{% else %}Overall Violation Frequency{% endif %}
+        </h3>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
+            <thead class="bg-slate-50">
+                <tr>
+                    <th scope="col" class="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Violation Code</th>
+                    <th scope="col" class="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Description</th>
+                    <th scope="col" class="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Type</th>
+                    <th scope="col" class="px-5 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Frequency Count</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-slate-200">
+                {% if violation_report_data %}
+                    {% for item in violation_report_data %}
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-5 py-3 whitespace-nowrap text-sm font-medium text-slate-700">{{ item.code }}</td>
+                        <td class="px-5 py-3 text-sm text-slate-600 min-w-[350px]">{{ item.description | truncate(80) }}</td>
+                        <td class="px-5 py-3 whitespace-nowrap">
+                            {% if item.type == 'Major' %}
+                                <span class="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">{{ item.type }}</span>
+                            {% else %}
+                                <span class="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">{{ item.type }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-5 py-3 whitespace-nowrap text-sm text-slate-600 text-center font-semibold">{{ item.count }}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center py-10 text-slate-500 text-sm">
+                            No violation data found for the selected criteria.
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block body_end_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const printButton = document.getElementById('print-button');
+    if (printButton) {
+        printButton.addEventListener('click', function() {
+            window.print();
+        });
+    }
+});
+</script>
+{% endblock %}

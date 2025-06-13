@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block title %}Incident #{{ incident.id }} Details - Guidance Admin{% endblock %}
+
+{% block page_title_bar %}
+<div class="mb-6">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-semibold text-slate-800">
+                Incident Details: #{{ incident.id }}
+            </h1>
+            <p class="text-sm text-slate-500">
+                Student: 
+                <a href="{{ url_for('views.student_profile', student_id=incident.student.id) }}" class="text-indigo-600 hover:underline">
+                    {{ incident.student.full_name }} ({{ incident.student.student_number }})
+                </a>
+            </p>
+        </div>
+        <div>
+            <a href="{{ url_for('views.incident_records_list') }}" class="py-2 px-4 border border-slate-300 text-slate-700 bg-white rounded-lg font-medium text-sm flex items-center hover:bg-slate-50 transition shadow-sm">
+                <i class="ri-arrow-left-line mr-2"></i> Back to Incident List
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Incident Information Card -->
+    <div class="bg-white p-6 rounded-xl shadow-lg">
+        <div class="flex justify-between items-center mb-4 border-b pb-3">
+            <h3 class="text-lg font-semibold text-slate-700">Incident Information</h3>
+            {% if not incident.sanction_applied and 
+                  (incident.status == 'Pending Major Sanction Review' or 
+                   (incident.violation.type == 'Major' and incident.status == 'Pending Review') or 
+                   (incident.is_escalated_to_major and incident.status == 'Pending Review')) %}
+                <button type="button" class="py-1.5 px-3 bg-green-500 text-white rounded-md text-xs font-medium hover:bg-green-600 transition flex items-center open-assign-major-sanction-modal-btn"
+                        data-incident-id="{{ incident.id }}"
+                        data-student-name="{{ incident.student.first_name }} {{ incident.student.last_name }}"
+                        data-violation-desc="{{ incident.violation.description | e }}"
+                        data-violation-code="{{ incident.violation.violation_code | e }}"
+                        data-date-committed="{{ incident.date_committed.strftime('%b %d, %Y %I:%M %p') }}"
+                        data-incident-details="{{ incident.details | e }}"
+                        data-is-repeat-major="{{ 'true' if incident.is_second_or_subsequent_major else 'false' }}"
+                        title="Assign Major Sanction">
+                    <i class="ri-scales-3-line mr-1"></i> Assign Major Sanction
+                </button>
+            {% endif %}
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm">
+            <div><strong class="text-slate-500 block mb-0.5">Student:</strong> <span class="text-slate-800">{{ incident.student.full_name }} ({{ incident.student.student_number }})</span></div>
+            <div><strong class="text-slate-500 block mb-0.5">Program:</strong> <span class="text-slate-800">{{ incident.student.program.program_name if incident.student.program else 'N/A' }}</span></div>
+            <div><strong class="text-slate-500 block mb-0.5">Year & Section:</strong> <span class="text-slate-800">{{ incident.student.year_section }}</span></div>
+            <div><strong class="text-slate-500 block mb-0.5">Date Committed:</strong> <span class="text-slate-800">{{ incident.date_committed.strftime('%b %d, %Y %I:%M %p') }}</span></div>
+            <div class="md:col-span-2"><hr class="my-2"></div>
+            <div><strong class="text-slate-500 block mb-0.5">Violation Code:</strong> <span class="text-slate-800">{{ incident.violation.violation_code if incident.violation else 'N/A' }}</span></div>
+            <div><strong class="text-slate-500 block mb-0.5">Violation Type:</strong> <span class="text-slate-800">{{ incident.violation.type if incident.violation else 'N/A' }}{% if incident.is_escalated_to_major and incident.violation and incident.violation.type == 'Minor' %} (Escalated to Major){% endif %}</span></div>
+            <div class="md:col-span-2"><strong class="text-slate-500 block mb-0.5">Violation Description:</strong> <span class="text-slate-800">{{ incident.violation.description if incident.violation else 'N/A' }}</span></div>
+            {% if incident.is_second_or_subsequent_major %}<div class="md:col-span-2 mt-2 p-3 bg-red-50 border border-red-200 rounded-md"><p class="text-sm font-semibold text-red-700 flex items-center"><i class="ri-alert-fill mr-2"></i>This is a Second or Subsequent Major Offense for this student.</p></div>{% endif %}
+            <div class="md:col-span-2"><hr class="my-2"></div>
+            <div><strong class="text-slate-500 block mb-0.5">Reported By:</strong> <span class="text-slate-800">{{ incident.reporter.full_name if incident.reporter else 'N/A' }}</span></div>
+            <div><strong class="text-slate-500 block mb-0.5">Current Incident Status:</strong> {% set status_color_map = { 'Pending Review': 'bg-yellow-100 text-yellow-800', 'Pending Major Sanction Review': 'bg-amber-100 text-amber-800', 'Escalated': 'bg-orange-100 text-orange-800', 'Sanction Assigned': 'bg-blue-100 text-blue-800', 'Sanction Completed': 'bg-teal-100 text-teal-800', 'Resolved': 'bg-green-100 text-green-800', 'Closed': 'bg-slate-100 text-slate-700' } %}<span class="px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full {{ status_color_map.get(incident.status, 'bg-gray-100 text-gray-800') }}">{{ incident.status | title }}</span></div>
+            {% if incident.cheated_subject %}<div class="md:col-span-2"><strong class="text-slate-500 block mb-0.5">Subject Cheated In:</strong> <span class="text-slate-800">{{ incident.cheated_subject }}</span></div>{% endif %}
+            <div class="md:col-span-2"><strong class="text-slate-500 block mb-0.5">Incident Details:</strong> <p class="text-slate-800 whitespace-pre-wrap">{{ incident.details }}</p></div>
+            {% if incident.assignee %}<div class="md:col-span-2 mt-2"><strong class="text-slate-500 block mb-0.5">Assigned To:</strong> <span class="font-semibold text-blue-700">{{ incident.assignee.full_name }} ({{ incident.assignee.role.value }})</span></div>{% endif %}
+            {% if incident.supporting_documents_path %}<div class="md:col-span-2 mt-2"><strong class="text-slate-500 block mb-1">Supporting Document:</strong><a href="{{ url_for('views.uploaded_file', filename=incident.supporting_documents_path) }}" target="_blank" class="inline-flex items-center text-sm text-indigo-600 hover:text-indigo-800 hover:underline bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors"><i class="ri-attachment-2 mr-2"></i> View Document ({{ incident.supporting_documents_path | replace(incident.supporting_documents_path.split('_')[0] + '_', '') }})</a></div>{% endif %}
+        </div>
+    </div>
+
+    {% if incident.sanction_applied %}{% set sanction = incident.sanction_applied %}<div class="bg-white p-6 rounded-xl shadow-lg"><div class="flex justify-between items-center mb-4 border-b pb-3"><h3 class="text-lg font-semibold text-slate-700">Sanction Information</h3>{% if not sanction.completion_date and incident.status in ['Sanction Assigned', 'Sanction Completed'] %}<form action="{{ url_for('views.complete_sanction', sanction_log_id=sanction.id) }}" method="POST" class="inline"><button type="submit" class="py-1.5 px-3 bg-teal-500 text-white rounded-md text-xs font-medium hover:bg-teal-600 transition flex items-center" onclick="return confirm('Are you sure you want to mark this sanction as completed?');"><i class="ri-check-double-line mr-1"></i> Mark as Completed</button></form>{% elif sanction.completion_date %}<span class="py-1.5 px-3 bg-green-100 text-green-700 rounded-md text-xs font-semibold flex items-center"><i class="ri-check-line mr-1"></i> Sanction Completed</span>{% endif %}</div><div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm"><div><strong class="text-slate-500 block mb-0.5">Sanction Type:</strong> <span class="text-slate-800">{{ sanction.sanction_type }}</span></div><div><strong class="text-slate-500 block mb-0.5">Date Assigned:</strong> <span class="text-slate-800">{{ sanction.date_assigned.strftime('%b %d, %Y') if sanction.date_assigned else 'N/A' }}</span></div><div class="md:col-span-2"><strong class="text-slate-500 block mb-0.5">Specific Details/Duration:</strong> <p class="text-slate-800 whitespace-pre-wrap">{{ sanction.sanction_details }}</p></div>{% if sanction.due_date %}<div><strong class="text-slate-500 block mb-0.5">Due Date:</strong> <span class="text-slate-800">{{ sanction.due_date.strftime('%b %d, %Y') }}</span></div>{% endif %}<div><strong class="text-slate-500 block mb-0.5">Completion Date:</strong> {% if sanction.completion_date %}<span class="text-green-600 font-semibold">{{ sanction.completion_date.strftime('%b %d, %Y') }}</span>{% else %}<span class="text-slate-800 italic">Pending</span>{% endif %}</div>{% if sanction.notes %}<div class="md:col-span-2"><strong class="text-slate-500 block mb-0.5">Sanction Notes:</strong> <p class="text-slate-800 whitespace-pre-wrap">{{ sanction.notes }}</p></div>{% endif %}</div></div>
+    {% elif not incident.sanction_applied and not (incident.status == 'Pending Major Sanction Review' or (incident.violation and incident.violation.type == 'Major' and incident.status != 'Resolved' and incident.status != 'Sanction Completed') or (incident.is_escalated_to_major and incident.status == 'Pending Review')) %}
+    <div class="bg-slate-50 p-6 rounded-xl shadow-lg border border-slate-200"><h3 class="text-lg font-semibold text-slate-700 mb-2">No Sanction Logged</h3><p class="text-sm text-slate-600">No specific sanction has been formally logged for this incident yet.</p></div>
+    {% endif %}
+    
+    <div class="bg-white p-6 rounded-xl shadow-lg">
+        <h3 class="text-lg font-semibold text-slate-700 mb-4 border-b pb-3">Escalation Actions</h3>
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-slate-700">Escalate for Review</p>
+                <p class="text-xs text-slate-500 mt-1">Assign this case to a Dean or Head of OSA for a formal decision.</p>
+            </div>
+            <button type="button" x-data @click="$dispatch('open-modal', 'escalate-incident-modal')"
+                    class="py-2 px-4 bg-amber-500 text-white rounded-lg font-medium text-sm flex items-center hover:bg-amber-600 transition shadow-sm">
+                <i class="ri-upload-2-line mr-2"></i> Escalate Case
+            </button>
+        </div>
+    </div>
+
+    <div class="bg-red-50 p-6 rounded-xl shadow-lg border border-red-200">
+        <h3 class="text-lg font-semibold text-red-800">Danger Zone</h3>
+        <div class="mt-4 flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-red-700">Delete This Incident</p>
+                <p class="text-xs text-red-600 mt-1">This will permanently remove the incident, its sanction, and any attached documents. This action cannot be undone.</p>
+            </div>
+            <form action="{{ url_for('views.delete_incident', incident_id=incident.id) }}" method="POST"
+                  onsubmit="return confirm('Are you absolutely sure you want to permanently delete this incident record?');">
+                <button type="submit"
+                        class="py-2 px-4 bg-red-600 text-white rounded-lg font-medium text-sm flex items-center hover:bg-red-700 transition shadow-sm">
+                    <i class="ri-delete-bin-line mr-2"></i> Delete Incident
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% include "incidents/_assign_major_sanction_modal.html" %}
+{% include "_log_incident_modal.html" %} 
+
+<div x-data="{ open: false }" @open-modal.window="if ($event.detail === 'escalate-incident-modal') open = true" @keydown.escape.window="open = false" x-show="open" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none;">
+    <div x-show="open" x-transition.opacity class="fixed inset-0 bg-slate-900 bg-opacity-50"></div>
+    <div x-show="open" x-transition class="bg-white rounded-xl shadow-2xl w-full max-w-md transform">
+        <div class="px-6 py-4 border-b">
+            <h3 class="text-lg font-semibold">Escalate Incident #{{ incident.id }}</h3>
+        </div>
+        <form action="{{ url_for('views.escalate_incident', incident_id=incident.id) }}" method="POST">
+            <div class="p-6 space-y-4">
+                <p class="text-sm text-slate-600">Select the person to whom this case should be escalated for review and decision.</p>
+                <div>
+                    <label for="assignee_id" class="block text-sm font-medium text-slate-700 mb-1">Assign To</label>
+                    <select name="assignee_id" id="assignee_id" required class="block w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="" disabled selected>-- Select a Dean or Head --</option>
+                        {% for assignee in potential_assignees %}
+                            <option value="{{ assignee.id }}">{{ assignee.full_name }} ({{ assignee.role.value }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="px-6 py-4 bg-slate-50 flex justify-end space-x-3">
+                <button type="button" @click="open = false" class="px-4 py-2 border border-slate-300 text-slate-700 bg-white rounded-lg text-sm font-medium hover:bg-slate-50">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-amber-500 text-white rounded-lg text-sm font-medium hover:bg-amber-600">Confirm Escalation</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block body_end_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // JS for Assign Major Sanction Modal (if triggered from this page)
+    const assignMajorSanctionModal = document.getElementById('assignMajorSanctionModal');
+    const assignMajorSanctionModalContent = document.getElementById('assignMajorSanctionModalContent');
+    const closeAssignMajorSanctionModalBtn = document.getElementById('closeAssignMajorSanctionModalBtn');
+    const cancelAssignMajorSanctionModalBtn = document.getElementById('cancelAssignMajorSanctionModalBtn');
+    const assignMajorSanctionForm = document.getElementById('assignMajorSanctionForm');
+    const openAssignMajorSanctionModalBtns = document.querySelectorAll('.open-assign-major-sanction-modal-btn'); // Use common class
+
+    function populateAssignSanctionForm(incidentData) {
+        if(assignMajorSanctionForm) {
+            document.getElementById('ams_incident_id').value = incidentData.id;
+            document.getElementById('ams_modal_student_name').textContent = incidentData.studentName;
+            document.getElementById('ams_modal_violation_desc').textContent = incidentData.violationDesc;
+            document.getElementById('ams_modal_violation_code').textContent = incidentData.violationCode;
+            document.getElementById('ams_modal_date_committed').textContent = incidentData.dateCommitted;
+            document.getElementById('ams_modal_incident_details').textContent = incidentData.incidentDetails;
+            assignMajorSanctionForm.action = `/incident/${incidentData.id}/assign_sanction`;
+            const warningDiv = document.getElementById('ams_modal_repeat_major_warning');
+            const hiddenInputForRepeat = document.getElementById('ams_is_repeat_major_status_for_form');
+            const sanctionTypeDropdown = document.getElementById('ams_sanction_type'); 
+            if (incidentData.isRepeatMajor === 'true') {
+                warningDiv.classList.remove('hidden');
+                if(hiddenInputForRepeat) hiddenInputForRepeat.value = "true";
+            } else {
+                warningDiv.classList.add('hidden');
+                if(hiddenInputForRepeat) hiddenInputForRepeat.value = "false";
+                if (sanctionTypeDropdown) sanctionTypeDropdown.value = ""; 
+            }
+        }
+    }
+    function openAssignMajorSanctionModal(button) {
+        if(assignMajorSanctionForm) assignMajorSanctionForm.reset();
+        const incidentData = { id: button.dataset.incidentId, studentName: button.dataset.studentName, violationDesc: button.dataset.violationDesc, violationCode: button.dataset.violationCode, dateCommitted: button.dataset.dateCommitted, incidentDetails: button.dataset.incidentDetails, isRepeatMajor: button.dataset.isRepeatMajor };
+        populateAssignSanctionForm(incidentData);
+        if(assignMajorSanctionModal) assignMajorSanctionModal.classList.remove('hidden');
+        setTimeout(() => { if(assignMajorSanctionModal) assignMajorSanctionModal.classList.remove('opacity-0'); if(assignMajorSanctionModalContent) { assignMajorSanctionModalContent.classList.remove('scale-95', 'opacity-0'); assignMajorSanctionModalContent.classList.add('scale-100', 'opacity-100');}}, 10);
+    }
+    function closeAssignMajorSanctionModal() {
+        if(assignMajorSanctionModalContent) { assignMajorSanctionModalContent.classList.remove('scale-100', 'opacity-100'); assignMajorSanctionModalContent.classList.add('scale-95', 'opacity-0');}
+        if(assignMajorSanctionModal) assignMajorSanctionModal.classList.add('opacity-0');
+        setTimeout(() => { if(assignMajorSanctionModal) assignMajorSanctionModal.classList.add('hidden'); }, 300);
+    }
+    openAssignMajorSanctionModalBtns.forEach(btn => { btn.addEventListener('click', function() { openAssignMajorSanctionModal(this); }); });
+    if(closeAssignMajorSanctionModalBtn) closeAssignMajorSanctionModalBtn.addEventListener('click', closeAssignMajorSanctionModal);
+    if(cancelAssignMajorSanctionModalBtn) cancelAssignMajorSanctionModalBtn.addEventListener('click', closeAssignMajorSanctionModal);
+    if(assignMajorSanctionModal) { assignMajorSanctionModal.addEventListener('click', function(event) { if (event.target === assignMajorSanctionModal) { closeAssignMajorSanctionModal(); }}); }
+});
+</script>
+{% endblock %}

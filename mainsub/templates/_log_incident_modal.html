@@ -1,0 +1,104 @@
+<div id="logIncidentModal"
+     class="fixed inset-0 bg-slate-900 bg-opacity-50 z-40 flex items-center justify-center p-4 hidden transition-opacity duration-300 ease-in-out opacity-0"
+     aria-labelledby="modal-title" role="dialog" aria-modal="true">
+
+    <div id="logIncidentModalContent"
+         class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col transform transition-all duration-300 ease-in-out scale-95 opacity-0">
+        <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+            <h3 id="modal-title" class="text-lg font-semibold text-slate-800">Log New Incident</h3>
+            <button type="button" id="closeIncidentModalBtn"
+                    class="w-8 h-8 flex items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+                    aria-label="Close modal">
+                <i class="ri-close-line text-xl"></i>
+            </button>
+        </div>
+
+        <div class="p-6 overflow-y-auto flex-1">
+            <form id="logIncidentForm" method="POST" action="{{ url_for('views.log_incident') }}" enctype="multipart/form-data" class="space-y-6">
+                <div>
+                    <label for="student_id_searchable" class="block text-sm font-medium text-slate-700 mb-1">Student <span class="text-red-500">*</span></label>
+                    <select id="student_id_searchable" name="student_id" required
+                            placeholder="Type to search for a student...">
+                        <option value="">Select or type to search...</option>
+                        {% if available_students %}
+                            {% for student_item in available_students %}
+                                <option value="{{ student_item.id }}">
+                                    {{ student_item.last_name }}, {{ student_item.first_name }} ({{ student_item.program.program_code if student_item.program else 'N/A' }} - {{ student_item.year_section }})
+                                </option>
+                            {% endfor %}
+                        {% else %}
+                            <option value="" disabled>No students available to select.</option>
+                        {% endif %}
+                    </select>
+                    <p id="studentOffenseInfo" class="text-xs text-slate-500 mt-1 hidden"></p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="violation_id_searchable" class="block text-sm font-medium text-slate-700 mb-1">Violation <span class="text-red-500">*</span></label>
+                        <!-- START: THIS IS THE CHANGE -->
+                        <select id="violation_id_searchable" name="violation_id" required>
+                        <!-- END: THIS IS THE CHANGE -->
+                            <option value="" disabled selected>Select a violation...</option>
+                            {% if minor_violations or major_violations %}
+                                <optgroup label="Minor Offenses">
+                                {% for violation in minor_violations %}
+                                    <option value="{{ violation.id }}" data-type="Minor">{{ violation.description | truncate(50) }} ({{ violation.violation_code }})</option>
+                                {% endfor %}
+                                </optgroup>
+                                <optgroup label="Major Offenses">
+                                {% for violation in major_violations %}
+                                    <option value="{{ violation.id }}" data-type="Major">{{ violation.description | truncate(50) }} ({{ violation.violation_code }})</option>
+                                {% endfor %}
+                                </optgroup>
+                            {% else %}
+                                 <option value="" disabled>No violations loaded.</option>
+                            {% endif %}
+                        </select>
+                        <p id="violationSeverityInfo" class="text-xs text-red-600 font-medium mt-1 hidden"></p>
+                    </div>
+                    <div>
+                        <label for="date_committed" class="block text-sm font-medium text-slate-700 mb-1">Date of Incident <span class="text-red-500">*</span></label>
+                        <input type="datetime-local" id="date_committed" name="date_committed" required value="{{ now_iso if now_iso else '' }}"
+                               class="block w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg shadow-sm
+                                      focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                    </div>
+                </div>
+
+                <div id="cheated_subject_div" class="hidden">
+                    <label for="cheated_subject" class="block text-sm font-medium text-slate-700 mb-1">Subject Cheated In (if applicable)</label>
+                    <input type="text" id="cheated_subject" name="cheated_subject"
+                           class="block w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg shadow-sm
+                                  focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                           placeholder="e.g., Math 101">
+                </div>
+
+                <div>
+                    <label for="details" class="block text-sm font-medium text-slate-700 mb-1">Details of Incident <span class="text-red-500">*</span></label>
+                    <textarea id="details" name="details" rows="4" required
+                              class="block w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg shadow-sm resize-y
+                                     focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                              placeholder="Provide a clear and concise description of what happened..."></textarea>
+                </div>
+                
+                <div>
+                    <label for="supporting_document" class="block text-sm font-medium text-slate-700 mb-1">Attach Supporting Document (Optional)</label>
+                    <input type="file" name="supporting_document" id="supporting_document"
+                           class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-colors cursor-pointer">
+                    <p class="text-xs text-slate-500 mt-1">Allowed files: .png, .jpg, .pdf, .doc, .docx, .txt (Max 16MB)</p>
+                </div>
+            </form>
+        </div>
+
+        <div class="px-6 py-4 border-t border-slate-200 bg-slate-50 flex justify-end space-x-3">
+            <button type="button" id="cancelLogIncidentBtn"
+                    class="px-4 py-2 border border-slate-300 text-slate-700 bg-white rounded-lg text-sm font-medium hover:bg-slate-50 transition shadow-sm">
+                Cancel
+            </button>
+            <button type="submit" form="logIncidentForm"
+                    class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                Submit Incident
+            </button>
+        </div>
+    </div>
+</div>

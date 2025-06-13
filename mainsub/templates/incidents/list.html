@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title if page_title else 'All Incidents' }} - Guidance Admin{% endblock %}
+
+{% block page_title_bar %}
+<div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div>
+        <h1 class="text-2xl font-semibold text-slate-800">{{ page_title if page_title else 'Incident Records' }}</h1>
+        <p class="text-sm text-slate-500">Browse and manage all logged student incidents.</p>
+    </div>
+    <div>
+        <button id="openLogIncidentModalBtn_IncidentPage" class="py-2 px-4 bg-indigo-600 text-white rounded-lg font-medium text-sm flex items-center hover:bg-indigo-700 transition shadow-sm hover:shadow-md">
+            <i class="ri-add-circle-line mr-2"></i>
+            Log New Incident
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-xl shadow-lg overflow-hidden">
+    <div class="px-5 py-4 border-b border-slate-200">
+        <form method="GET" action="{{ url_for('views.incident_records_list') }}" class="mb-6">
+            <input type="hidden" name="alert_trigger" value="{{ request.args.get('alert_trigger', '') }}">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4 items-end">
+                <div><label for="filter_student_name" class="block text-xs font-medium text-slate-600 mb-1">Student Name/ID</label><input type="text" id="filter_student_name" name="student_query" value="{{ request.args.get('student_query', '') }}" placeholder="Name or ID" class="block w-full h-9 px-3 text-sm border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition"></div>
+                <div><label for="filter_violation_type" class="block text-xs font-medium text-slate-600 mb-1">Violation Type</label><select id="filter_violation_type" name="violation_type" class="block w-full h-9 px-3 text-sm border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition"><option value="">All Types</option><option value="Minor" {% if request.args.get('violation_type') == 'Minor' %}selected{% endif %}>Minor</option><option value="Major" {% if request.args.get('violation_type') == 'Major' %}selected{% endif %}>Major</option></select></div>
+                <div>
+                    <label for="filter_status" class="block text-xs font-medium text-slate-600 mb-1">Status</label>
+                    <select id="filter_status" name="status" class="block w-full h-9 px-3 text-sm border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        <option value="">All Statuses</option>
+                        {% for status_val in distinct_statuses %}
+                        <option value="{{ status_val }}" {% if request.args.get('status') == status_val %}selected{% endif %}>{{ status_val }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div><label for="filter_date_from" class="block text-xs font-medium text-slate-600 mb-1">Date From</label><input type="date" id="filter_date_from" name="date_from" value="{{ request.args.get('date_from', '') }}" class="block w-full h-9 px-3 text-sm border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition"></div>
+                <div><label for="filter_date_to" class="block text-xs font-medium text-slate-600 mb-1">Date To</label><input type="date" id="filter_date_to" name="date_to" value="{{ request.args.get('date_to', '') }}" class="block w-full h-9 px-3 text-sm border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition"></div>
+                <div class="flex space-x-2"><button type="submit" class="w-full sm:w-auto py-2 px-4 bg-indigo-600 text-white rounded-lg font-medium text-sm flex items-center justify-center hover:bg-indigo-700 transition shadow-sm"><i class="ri-filter-3-line mr-2"></i>Filter</button><a href="{{ url_for('views.incident_records_list') }}" class="w-full sm:w-auto py-2 px-4 border border-slate-300 text-slate-700 bg-white rounded-lg font-medium text-sm flex items-center justify-center hover:bg-slate-50 transition shadow-sm" title="Clear Filters"><i class="ri-refresh-line"></i></a></div>
+            </div>
+        </form>
+    </div>
+    
+    <div>
+        <!-- Desktop Table View -->
+        <div class="hidden lg:block overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th scope="col" class="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">ID</th>
+                        <th scope="col" class="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Student</th>
+                        <th scope="col" class="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Violation (Code)</th>
+                        <th scope="col" class="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Date Committed</th>
+                        <th scope="col" class="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
+                        <th scope="col" class="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-slate-200">
+                    {% if pagination and pagination.items %}
+                        {% for incident in pagination.items %}
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="px-5 py-3 whitespace-nowrap text-sm text-slate-600">#{{ incident.id }}</td>
+                            <td class="px-5 py-3 whitespace-nowrap"><a href="{{ url_for('views.student_profile', student_id=incident.student.id) }}" class="text-sm font-medium text-indigo-600 hover:text-indigo-800">{{ incident.student.last_name }}, {{ incident.student.first_name }}</a></td>
+                            <td class="px-5 py-3 text-sm text-slate-600"><div class="font-medium text-slate-700">{{ incident.violation.description | truncate(40) if incident.violation else 'N/A' }}</div><div class="text-xs text-slate-500">({{ incident.violation.violation_code if incident.violation else 'N/A' }}) {% if incident.violation and incident.violation.type == 'Major' or incident.is_escalated_to_major %}<span class="ml-1 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-red-50 text-red-600">Major</span>{% elif incident.violation and incident.violation.type == 'Minor' %}<span class="ml-1 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-yellow-50 text-yellow-600">Minor</span>{% endif %} {% if incident.is_second_or_subsequent_major %}<span class="ml-1 px-1.5 py-0.5 text-xs font-bold rounded-full bg-orange-100 text-orange-700 animate-pulse">Repeat Major!</span>{% endif %}</div></td>
+                            <td class="px-5 py-3 whitespace-nowrap text-sm text-slate-500">{{ incident.date_committed.strftime('%b %d, %Y %I:%M %p') }}</td>
+                            <td class="px-5 py-3 whitespace-nowrap">{% set status_color_map = { 'Pending Review': 'bg-yellow-100 text-yellow-800', 'Pending Major Sanction Review': 'bg-amber-100 text-amber-800', 'Escalated': 'bg-orange-100 text-orange-800', 'Sanction Assigned': 'bg-blue-100 text-blue-800', 'Sanction Completed': 'bg-teal-100 text-teal-800', 'Resolved': 'bg-green-100 text-green-800', 'Closed': 'bg-slate-100 text-slate-700' } %}<span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {{ status_color_map.get(incident.status, 'bg-gray-100 text-gray-800') }}">{{ incident.status | title }}</span></td>
+                            <td class="px-5 py-3 whitespace-nowrap text-sm font-medium space-x-2"><a href="{{ url_for('views.incident_details', incident_id=incident.id) }}" class="text-indigo-600 hover:text-indigo-800" title="View Details"><i class="ri-search-eye-line"></i></a> {% set show_assign_button = false %} {% if not incident.sanction_applied %} {% if incident.status == 'Pending Major Sanction Review' %} {% set show_assign_button = true %} {% elif incident.status == 'Pending Review' %} {% if incident.violation and incident.violation.type == 'Major' %} {% set show_assign_button = true %} {% elif incident.is_escalated_to_major %} {% set show_assign_button = true %} {% endif %} {% endif %} {% endif %} {% if show_assign_button %} <button type="button" class="text-green-600 hover:text-green-800 open-assign-major-sanction-modal-btn" data-incident-id="{{ incident.id }}" data-student-name="{{ incident.student.first_name }} {{ incident.student.last_name }}" data-violation-desc="{{ incident.violation.description | default('N/A') | e }}" data-violation-code="{{ incident.violation.violation_code | default('N/A') | e }}" data-date-committed="{{ incident.date_committed.strftime('%b %d, %Y %I:%M %p') }}" data-incident-details="{{ incident.details | default('') | e }}" data-is-repeat-major="{{ 'true' if incident.is_second_or_subsequent_major else 'false' }}" title="Assign Major Sanction"><i class="ri-scales-3-line"></i></button> {% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr> <td colspan="6" class="text-center py-10 text-slate-500 text-sm">No incidents found.</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Mobile Card View -->
+        <div class="lg:hidden divide-y divide-slate-200">
+            {% if pagination and pagination.items %}
+                {% for incident in pagination.items %}
+                <div class="p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <p class="text-sm font-medium text-slate-900">{{ incident.student.last_name }}, {{ incident.student.first_name }}</p>
+                        <div class="text-sm space-x-2">
+                            <a href="{{ url_for('views.incident_details', incident_id=incident.id) }}" class="text-indigo-600" title="View Details"><i class="ri-eye-line"></i></a>
+                             {% if not incident.sanction_applied and (incident.status == 'Pending Major Sanction Review' or (incident.violation and incident.violation.type == 'Major') or incident.is_escalated_to_major) %}
+                             <button type="button" class="text-green-600 open-assign-major-sanction-modal-btn" data-incident-id="{{ incident.id }}" title="Assign Sanction"><i class="ri-scales-3-line"></i></button>
+                             {% endif %}
+                        </div>
+                    </div>
+                    <p class="text-sm text-slate-700">{{ incident.violation.description | truncate(60) if incident.violation else 'N/A' }}</p>
+                    <div class="mt-2 text-xs flex justify-between items-center">
+                        <span class="text-slate-500">{{ incident.date_committed.strftime('%b %d, %Y') }}</span>
+                        {% set status_color_map = { 'Pending Review': 'bg-yellow-100 text-yellow-800', 'Pending Major Sanction Review': 'bg-amber-100 text-amber-800', 'Escalated': 'bg-orange-100 text-orange-800', 'Sanction Assigned': 'bg-blue-100 text-blue-800', 'Sanction Completed': 'bg-teal-100 text-teal-800', 'Resolved': 'bg-green-100 text-green-800', 'Closed': 'bg-slate-100 text-slate-700' } %}<span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {{ status_color_map.get(incident.status, 'bg-gray-100 text-gray-800') }}">{{ incident.status | title }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                 <p class="text-center py-10 text-slate-500">No incidents found.</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    {% if pagination and pagination.pages > 1 %}<div class="px-5 py-4 border-t border-slate-200"><nav class="flex items-center justify-between"><div class="text-sm text-slate-500">Page {{ pagination.page }} of {{ pagination.pages }}</div><div class="flex space-x-1">{% set query_params = request.args.to_dict() %}{% if 'page' in query_params %}{% set _ = query_params.pop('page') %}{% endif %}{% if pagination.has_prev %}<a href="{{ url_for('views.incident_records_list', page=pagination.prev_num, **query_params) }}" class="px-3 py-1.5 border border-slate-300 bg-white text-slate-600 rounded-md text-sm hover:bg-slate-50">Previous</a>{% else %}<span class="px-3 py-1.5 border border-slate-200 bg-slate-100 text-slate-400 rounded-md text-sm cursor-not-allowed">Previous</span>{% endif %}{% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}{% if page_num %}{% if pagination.page == page_num %}<span class="px-3 py-1.5 border border-indigo-500 bg-indigo-500 text-white rounded-md text-sm">{{ page_num }}</span>{% else %}<a href="{{ url_for('views.incident_records_list', page=page_num, **query_params) }}" class="px-3 py-1.5 border border-slate-300 bg-white text-slate-600 rounded-md text-sm hover:bg-slate-50">{{ page_num }}</a>{% endif %}{% else %}<span class="px-3 py-1.5 text-slate-400">...</span>{% endif %}{% endfor %}{% if pagination.has_next %}<a href="{{ url_for('views.incident_records_list', page=pagination.next_num, **query_params) }}" class="px-3 py-1.5 border border-slate-300 bg-white text-slate-600 rounded-md text-sm hover:bg-slate-50">Next</a>{% else %}<span class="px-3 py-1.5 border border-slate-200 bg-slate-100 text-slate-400 rounded-md text-sm cursor-not-allowed">Next</span>{% endif %}</div></nav></div>{% endif %}
+</div>
+
+{% include "_log_incident_modal.html" %}
+{% include "incidents/_assign_major_sanction_modal.html" %} 
+{% endblock %}
+
+{% block body_end_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // --- Log Incident Modal JS ---
+    const logIncidentModal = document.getElementById('logIncidentModal'); 
+    const logIncidentModalContent = document.getElementById('logIncidentModalContent');
+    const openLogIncidentBtnIncidentPage = document.getElementById('openLogIncidentModalBtn_IncidentPage'); 
+    const closeLogIncidentBtn = document.getElementById('closeIncidentModalBtn'); 
+    const cancelLogIncidentBtn = document.getElementById('cancelLogIncidentBtn'); 
+    let tomStudentSelectInstance = null; 
+    const studentSearchableElement = document.getElementById('student_id_searchable'); 
+    const violationSelect = document.getElementById('violation_id');
+    const studentOffenseInfoEl = document.getElementById('studentOffenseInfo');
+    const violationSeverityInfoEl = document.getElementById('violationSeverityInfo');
+    const cheatedSubjectDiv = document.getElementById('cheated_subject_div');
+    const incidentForm = document.getElementById('logIncidentForm');
+    const dateCommittedInput = document.getElementById('date_committed');
+    const openLogIncidentModalTriggers = document.querySelectorAll('.open-log-incident-modal-trigger'); 
+
+
+    if (studentSearchableElement && typeof TomSelect !== 'undefined') {
+        tomStudentSelectInstance = new TomSelect(studentSearchableElement, { create: false, sortField: { field: "text", direction: "asc" }, placeholder: "Type or select a student...", onChange: async function(value) { if (value) { await fetchStudentOffenseInfo(value); await handleViolationChange(); } else { if(studentOffenseInfoEl) {studentOffenseInfoEl.classList.add('hidden'); studentOffenseInfoEl.textContent = '';} if(violationSeverityInfoEl) {violationSeverityInfoEl.classList.add('hidden'); violationSeverityInfoEl.textContent = '';} }} });
+    }
+    function openLogIncidentModalGeneral(studentIdToPreselect = null, studentNameForDisplay = null) { 
+        if(incidentForm) incidentForm.reset(); 
+        if(tomStudentSelectInstance) { 
+            tomStudentSelectInstance.clear(); 
+            if (studentIdToPreselect) { 
+                if (!tomStudentSelectInstance.getOption(studentIdToPreselect) && studentNameForDisplay) { 
+                    tomStudentSelectInstance.addOption({value: studentIdToPreselect, text: studentNameForDisplay}); 
+                }
+                tomStudentSelectInstance.setValue(studentIdToPreselect, true); 
+                fetchStudentOffenseInfo(studentIdToPreselect); 
+                handleViolationChange(); 
+            }
+        } else if (studentSearchableElement && studentIdToPreselect) { 
+            studentSearchableElement.value = studentIdToPreselect; 
+        } 
+        if(studentOffenseInfoEl) { studentOffenseInfoEl.classList.add('hidden'); studentOffenseInfoEl.textContent = ''; } 
+        if(violationSeverityInfoEl) { violationSeverityInfoEl.classList.add('hidden'); violationSeverityInfoEl.textContent = ''; } 
+        if(cheatedSubjectDiv) cheatedSubjectDiv.classList.add('hidden'); 
+        if(dateCommittedInput) { const now = new Date(); const localNow = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)); dateCommittedInput.value = localNow.toISOString().slice(0, 16); } 
+        if(logIncidentModal) logIncidentModal.classList.remove('hidden'); 
+        setTimeout(() => { if(logIncidentModal) logIncidentModal.classList.remove('opacity-0'); if(logIncidentModalContent) {logIncidentModalContent.classList.remove('scale-95', 'opacity-0'); logIncidentModalContent.classList.add('scale-100', 'opacity-100');}}, 10); 
+    }
+    function closeLogIncidentModalGeneral() { 
+        if(logIncidentModalContent) { logIncidentModalContent.classList.remove('scale-100', 'opacity-100'); logIncidentModalContent.classList.add('scale-95', 'opacity-0');} 
+        if(logIncidentModal) logIncidentModal.classList.add('opacity-0'); 
+        setTimeout(() => { if(logIncidentModal) logIncidentModal.classList.add('hidden');}, 300); 
+    }
+    
+    if(openLogIncidentBtnIncidentPage) { 
+        openLogIncidentBtnIncidentPage.addEventListener('click', function() {
+            openLogIncidentModalGeneral();
+        });
+    }
+    openLogIncidentModalTriggers.forEach(btn => { 
+        btn.addEventListener('click', function() { 
+            const studentId = this.dataset.studentIdToLog; 
+            const studentName = this.dataset.studentNameToLog; 
+            openLogIncidentModalGeneral(studentId, studentName); 
+        }); 
+    });
+
+    if(closeLogIncidentBtn) closeLogIncidentBtn.addEventListener('click', closeLogIncidentModalGeneral);
+    if(cancelLogIncidentBtn) cancelLogIncidentBtn.addEventListener('click', closeLogIncidentModalGeneral);
+    if(logIncidentModal) { logIncidentModal.addEventListener('click', function(event) { if (event.target === logIncidentModal) { closeLogIncidentModalGeneral(); }}); }
+    
+    async function fetchStudentOffenseInfo(studentId) { if (!studentId || !studentOffenseInfoEl) { if(studentOffenseInfoEl){ studentOffenseInfoEl.classList.add('hidden'); studentOffenseInfoEl.textContent = '';} return null;} try { const urlTemplate = "{{ url_for('views.get_student_offense_info', student_id=0) }}"; const fetchUrl = urlTemplate.replace('/0', `/${studentId}`); const response = await fetch(fetchUrl); if (!response.ok) { studentOffenseInfoEl.textContent = 'Error fetching student info.'; studentOffenseInfoEl.className = 'text-xs text-red-600 mt-1'; studentOffenseInfoEl.classList.remove('hidden'); return null; } const data = await response.json(); const minorOffenses = data.minor_offense_count; studentOffenseInfoEl.classList.remove('hidden'); if (minorOffenses === 0) { studentOffenseInfoEl.textContent = `This will be ${data.student_name}'s 1st Minor Offense.`; studentOffenseInfoEl.className = 'text-xs text-slate-500 mt-1'; } else if (minorOffenses === 1) { studentOffenseInfoEl.textContent = `This will be ${data.student_name}'s 2nd Minor Offense.`; studentOffenseInfoEl.className = 'text-xs text-orange-600 mt-1'; } else if (minorOffenses >= 2) { studentOffenseInfoEl.textContent = `${data.student_name} has ${minorOffenses} prior active minor offenses.`; studentOffenseInfoEl.className = 'text-xs text-red-600 font-semibold mt-1';} return minorOffenses; } catch (error) { studentOffenseInfoEl.textContent = 'Could not load student data.'; studentOffenseInfoEl.className = 'text-xs text-red-600 mt-1'; studentOffenseInfoEl.classList.remove('hidden'); return null; } }
+    async function handleViolationChange() { if (!violationSelect || !violationSelect.value || !violationSeverityInfoEl) { if(violationSeverityInfoEl){violationSeverityInfoEl.classList.add('hidden'); violationSeverityInfoEl.textContent = '';} return; } const selectedOption = violationSelect.selectedOptions[0]; const violationType = selectedOption.dataset.type; const violationText = selectedOption.textContent.split('(')[0].trim(); if(cheatedSubjectDiv){ if (violationText.toLowerCase().includes('cheating') || violationText.toLowerCase().includes('academic dishonesty')) { cheatedSubjectDiv.classList.remove('hidden'); } else { cheatedSubjectDiv.classList.add('hidden'); const cheatedSubjectInput = document.getElementById('cheated_subject'); if(cheatedSubjectInput) cheatedSubjectInput.value = ''; }} const currentStudentId = tomStudentSelectInstance ? tomStudentSelectInstance.getValue() : null; let minorOffenses = null; if (currentStudentId) { minorOffenses = await fetchStudentOffenseInfo(currentStudentId); } else { if(studentOffenseInfoEl) { studentOffenseInfoEl.classList.add('hidden'); studentOffenseInfoEl.textContent = '';}} if (violationType === 'Minor' && currentStudentId) { if (minorOffenses === null) { violationSeverityInfoEl.textContent = 'Select student to see offense context.'; violationSeverityInfoEl.className = 'text-xs text-orange-600 mt-1'; violationSeverityInfoEl.classList.remove('hidden'); } else if (minorOffenses >= 2) { violationSeverityInfoEl.textContent = 'ALERT: This 3rd (or subsequent) Minor Offense will be treated as a MAJOR OFFENSE.'; violationSeverityInfoEl.className = 'text-xs text-red-600 font-bold mt-1'; violationSeverityInfoEl.classList.remove('hidden'); } else { violationSeverityInfoEl.classList.add('hidden'); violationSeverityInfoEl.textContent = ''; }} else if (violationType === 'Major') { violationSeverityInfoEl.textContent = 'This is a MAJOR OFFENSE.'; violationSeverityInfoEl.className = 'text-xs text-red-600 font-bold mt-1'; violationSeverityInfoEl.classList.remove('hidden'); } else { violationSeverityInfoEl.classList.add('hidden'); violationSeverityInfoEl.textContent = ''; } }
+    if(violationSelect) violationSelect.addEventListener('change', handleViolationChange);
+
+    // --- Assign Major Sanction Modal JS ---
+    const assignMajorSanctionModal = document.getElementById('assignMajorSanctionModal');
+    const assignMajorSanctionModalContent = document.getElementById('assignMajorSanctionModalContent');
+    const closeAssignMajorSanctionModalBtn = document.getElementById('closeAssignMajorSanctionModalBtn');
+    const cancelAssignMajorSanctionModalBtn = document.getElementById('cancelAssignMajorSanctionModalBtn');
+    const assignMajorSanctionForm = document.getElementById('assignMajorSanctionForm');
+    const openAssignMajorSanctionModalBtns = document.querySelectorAll('.open-assign-major-sanction-modal-btn'); 
+
+    function populateAssignSanctionForm(incidentData) {
+        if(assignMajorSanctionForm) {
+            document.getElementById('ams_incident_id').value = incidentData.id;
+            document.getElementById('ams_modal_student_name').textContent = incidentData.studentName;
+            document.getElementById('ams_modal_violation_desc').textContent = incidentData.violationDesc;
+            document.getElementById('ams_modal_violation_code').textContent = incidentData.violationCode;
+            document.getElementById('ams_modal_date_committed').textContent = incidentData.dateCommitted;
+            document.getElementById('ams_modal_incident_details').textContent = incidentData.incidentDetails;
+            assignMajorSanctionForm.action = `/incident/${incidentData.id}/assign_sanction`;
+            const warningDiv = document.getElementById('ams_modal_repeat_major_warning');
+            const hiddenInputForRepeat = document.getElementById('ams_is_repeat_major_status_for_form');
+            const sanctionTypeDropdown = document.getElementById('ams_sanction_type'); 
+            if (incidentData.isRepeatMajor === 'true') {
+                warningDiv.classList.remove('hidden');
+                if(hiddenInputForRepeat) hiddenInputForRepeat.value = "true";
+            } else {
+                warningDiv.classList.add('hidden');
+                if(hiddenInputForRepeat) hiddenInputForRepeat.value = "false";
+                if (sanctionTypeDropdown) sanctionTypeDropdown.value = ""; 
+            }
+        }
+    }
+    function openAssignMajorSanctionModal(button) {
+        if(assignMajorSanctionForm) assignMajorSanctionForm.reset();
+        const incidentData = { id: button.dataset.incidentId, studentName: button.dataset.studentName, violationDesc: button.dataset.violationDesc, violationCode: button.dataset.violationCode, dateCommitted: button.dataset.dateCommitted, incidentDetails: button.dataset.incidentDetails, isRepeatMajor: button.dataset.isRepeatMajor };
+        populateAssignSanctionForm(incidentData);
+        if(assignMajorSanctionModal) assignMajorSanctionModal.classList.remove('hidden');
+        setTimeout(() => { if(assignMajorSanctionModal) assignMajorSanctionModal.classList.remove('opacity-0'); if(assignMajorSanctionModalContent) { assignMajorSanctionModalContent.classList.remove('scale-95', 'opacity-0'); assignMajorSanctionModalContent.classList.add('scale-100', 'opacity-100');}}, 10);
+    }
+    function closeAssignMajorSanctionModal() {
+        if(assignMajorSanctionModalContent) { assignMajorSanctionModalContent.classList.remove('scale-100', 'opacity-100'); assignMajorSanctionModalContent.classList.add('scale-95', 'opacity-0');}
+        if(assignMajorSanctionModal) assignMajorSanctionModal.classList.add('opacity-0');
+        setTimeout(() => { if(assignMajorSanctionModal) assignMajorSanctionModal.classList.add('hidden'); }, 300);
+    }
+    openAssignMajorSanctionModalBtns.forEach(btn => { btn.addEventListener('click', function() { openAssignMajorSanctionModal(this); }); });
+    if(closeAssignMajorSanctionModalBtn) closeAssignMajorSanctionModalBtn.addEventListener('click', closeAssignMajorSanctionModal);
+    if(cancelAssignMajorSanctionModalBtn) cancelAssignMajorSanctionModalBtn.addEventListener('click', closeAssignMajorSanctionModal);
+    if(assignMajorSanctionModal) { assignMajorSanctionModal.addEventListener('click', function(event) { if (event.target === assignMajorSanctionModal) { closeAssignMajorSanctionModal(); }}); }
+});
+</script>
+{% endblock %}

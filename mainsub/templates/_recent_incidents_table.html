@@ -1,0 +1,48 @@
+{# GUIDANCE/mainsub/templates/_recent_incidents_table.html #}
+<div class="lg:col-span-2 bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
+    <div class="px-5 py-4 border-b border-slate-200 flex justify-between items-center">
+        <h3 class="font-semibold text-slate-700">Recent Incidents</h3>
+        <a href="{{ url_for('views.incident_records_list') }}" class="text-sm text-indigo-600 hover:text-indigo-700 font-medium">View All</a>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
+            <thead class="bg-slate-50">
+                <tr>
+                    <th scope="col" class="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Student</th>
+                    <th scope="col" class="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Violation</th>
+                    <th scope="col" class="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Date</th>
+                    <th scope="col" class="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-slate-200">
+                {% if recent_incidents %}
+                    {% for incident in recent_incidents %}
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-5 py-3 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <img src="https://ui-avatars.com/api/?name={{ incident.student.first_name[0] if incident.student and incident.student.first_name else 'S' }}{{ incident.student.last_name[0] if incident.student and incident.student.last_name else 'D' }}&background=e0e7ff&color=4338ca&bold=true"
+                                     alt="Avatar" class="w-8 h-8 rounded-full mr-3 border border-indigo-100">
+                                <span class="text-sm font-medium text-slate-700">
+                                    {{ incident.student.first_name if incident.student else 'N/A' }} {{ incident.student.last_name if incident.student else '' }}
+                                </span>
+                            </div>
+                        </td>
+                        <td class="px-5 py-3 whitespace-nowrap text-sm text-slate-600">
+                            {{ incident.violation.description | truncate(35) if incident.violation else 'N/A' }}
+                        </td>
+                        <td class="px-5 py-3 whitespace-nowrap text-sm text-slate-500">
+                            {{ incident.date_committed.strftime('%b %d, %Y') if incident.date_committed else 'N/A' }}
+                        </td>
+                        <td class="px-5 py-3 whitespace-nowrap">
+                            {% set status_color = {'Pending Review': 'bg-yellow-100 text-yellow-800', 'Pending Major Sanction Review': 'bg-amber-100 text-amber-800', 'Escalated': 'bg-orange-100 text-orange-800', 'Sanction Assigned': 'bg-blue-100 text-blue-800', 'Sanction Completed': 'bg-teal-100 text-teal-800', 'Resolved': 'bg-green-100 text-green-800', 'Closed': 'bg-slate-100 text-slate-700'} %}
+                            <span class="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full {{ status_color.get(incident.status, 'bg-gray-100 text-gray-800') }}">{{ incident.status | title }}</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr><td colspan="4" class="text-center py-10 text-slate-500 text-sm">No recent incidents found.</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>

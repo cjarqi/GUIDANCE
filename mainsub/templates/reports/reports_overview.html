@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Reports - Guidance Admin{% endblock %}
+
+{% block page_title %}Reports Overview{% endblock %}
+{% block page_subtitle %}View various system reports and analytics.{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    
+    <a href="{{ url_for('views.report_students_with_offenses') }}"
+       class="block p-6 bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-200 ease-in-out group">
+        <div class="flex items-center justify-center w-12 h-12 bg-sky-100 rounded-lg mb-4 group-hover:bg-sky-200 transition-colors">
+            <i class="ri-user-unfollow-line text-2xl text-sky-600"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-slate-800 mb-1 group-hover:text-sky-700 transition-colors">Student Offense Report</h3>
+        <p class="text-sm text-slate-500">List of students with recorded offenses and summary counts.</p>
+    </a>
+
+    <a href="{{ url_for('views.report_sanction_monitoring') }}"
+       class="block p-6 bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-200 ease-in-out group">
+        <div class="flex items-center justify-center w-12 h-12 bg-amber-100 rounded-lg mb-4 group-hover:bg-amber-200 transition-colors">
+            <i class="ri-time-line text-2xl text-amber-600"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-slate-800 mb-1 group-hover:text-amber-700 transition-colors">Sanction Monitoring</h3>
+        <p class="text-sm text-slate-500">Track the status of assigned sanctions (pending, completed, overdue).</p>
+    </a>
+
+    <a href="{{ url_for('views.report_violation_frequency') }}"
+       class="block p-6 bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-200 ease-in-out group">
+        <div class="flex items-center justify-center w-12 h-12 bg-purple-100 rounded-lg mb-4 group-hover:bg-purple-200 transition-colors">
+            <i class="ri-bar-chart-grouped-line text-2xl text-purple-600"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-slate-800 mb-1 group-hover:text-purple-700 transition-colors">Violation Frequency</h3>
+        <p class="text-sm text-slate-500">Report on types and frequency of committed violations.</p>
+    </a>
+    
+    <a href="{{ url_for('views.report_audit_trail') }}"
+       class="block p-6 bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-200 ease-in-out group">
+        <div class="flex items-center justify-center w-12 h-12 bg-slate-100 rounded-lg mb-4 group-hover:bg-slate-200 transition-colors">
+            <i class="ri-history-line text-2xl text-slate-600"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-slate-800 mb-1 group-hover:text-slate-700 transition-colors">Audit Trail</h3>
+        <p class="text-sm text-slate-500">View a complete log of all actions taken in the system.</p>
+    </a>
+
+</div>
+{% endblock %}
