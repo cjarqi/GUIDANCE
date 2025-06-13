@@ -22,36 +22,35 @@ def create_app():
     # --- CONFIGURATION ---
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'a-very-secure-default-secret-key-for-development')
 
-    # --- DATABASE CONFIGURATION (Production and Local) ---
-    
-    # Check for a single DATABASE_URL environment variable (standard for production)
-    database_url = os.environ.get('DATABASE_URL')
-    
-    if database_url:
-        # If we're in production (DATABASE_URL is set), use it.
-        # Render provides a 'mysql://' URL, but mysql-connector-python requires 'mysql+mysqlconnector://'
-        if database_url.startswith("mysql://"):
-            database_url = database_url.replace("mysql://", "mysql+mysqlconnector://", 1)
-        app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-    else:
-        # If we're local (DATABASE_URL is not set), build the URI from your local defaults.
-        # This part will now ONLY run on your local machine.
-        DEFAULT_DB_HOST = 'localhost'
-        DEFAULT_DB_USER = 'root'
-        DEFAULT_DB_PASSWORD = "cjarqi"
-        DEFAULT_DB_NAME = "guidance_db"
-        DEFAULT_DB_PORT = '3306'
-        
-        local_sqlalchemy_uri = (
-            f"mysql+mysqlconnector://{DEFAULT_DB_USER}:{DEFAULT_DB_PASSWORD}@"
-            f"{DEFAULT_DB_HOST}:{DEFAULT_DB_PORT}/{DEFAULT_DB_NAME}"
-        )
-        app.config['SQLALCHEMY_DATABASE_URI'] = local_sqlalchemy_uri
+    # --- DATABASE CONFIGURATION (Using Individual Environment Variables) ---
 
+    # 1. Define the default parameters for LOCAL development
+    LOCAL_DB_HOST = 'localhost'
+    LOCAL_DB_USER = 'root'
+    LOCAL_DB_PASSWORD = "cjarqi"
+    LOCAL_DB_NAME = "guidance_db"
+    LOCAL_DB_PORT = '3306'
+
+    # 2. Get connection parameters from environment variables.
+    #    If an environment variable is not found, it will use your local default.
+    #    This is why you MUST set these variables in the Render environment.
+    db_host = os.environ.get('DB_HOST', LOCAL_DB_HOST)
+    db_user = os.environ.get('DB_USER', LOCAL_DB_USER)
+    db_password = os.environ.get('DB_PASSWORD', LOCAL_DB_PASSWORD)
+    db_name = os.environ.get('DB_NAME', LOCAL_DB_NAME)
+    db_port = os.environ.get('DB_PORT', LOCAL_DB_PORT)
+
+    # 3. Construct the final SQLAlchemy Database URI string
+    sqlalchemy_uri = (
+        f"mysql+mysqlconnector://{db_user}:{db_password}@"
+        f"{db_host}:{db_port}/{db_name}"
+    )
+    
+    app.config['SQLALCHEMY_DATABASE_URI'] = sqlalchemy_uri
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['SQLALCHEMY_ECHO'] = False # Set to True for debugging SQL queries
+    app.config['SQLALCHEMY_ECHO'] = False
 
-    # --- End of new database configuration ---
+    # --- End of database configuration ---
 
     upload_folder_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
     os.makedirs(upload_folder_path, exist_ok=True)
