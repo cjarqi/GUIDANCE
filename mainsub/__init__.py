@@ -22,41 +22,32 @@ def create_app():
     # --- CONFIGURATION ---
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'a-very-secure-default-secret-key-for-development')
 
-    # --- DATABASE CONFIGURATION (Inspired by your get_db_connection function) ---
-
-    # 1. Define the default connection parameters (like your Railway defaults)
-    DEFAULT_DB_HOST = 'localhost'
-    DEFAULT_DB_USER = 'root'
-    DEFAULT_DB_PASSWORD = "cjarqi"
-    DEFAULT_DB_NAME = "guidance_db"
-    DEFAULT_DB_PORT = '3306' # Keep as a string initially, like os.getenv() does
-
-    # 2. Get connection parameters from environment variables, falling back to defaults
-    db_user = os.environ.get('DB_USER', DEFAULT_DB_USER)
-    db_password = os.environ.get('DB_PASSWORD', DEFAULT_DB_PASSWORD)
-    db_name = os.environ.get('DB_NAME', DEFAULT_DB_NAME)
+    # --- DATABASE CONFIGURATION (Production and Local) ---
     
-    # 3. Special handling for the database host as per your logic
-    db_host = os.environ.get('DB_HOST') # Get it first without a default
-    if not db_host or db_host.lower() == 'localhost':
-        # If DB_HOST is not set, or if it's explicitly 'localhost', use the default remote host.
-        db_host = DEFAULT_DB_HOST
+    # Check for a single DATABASE_URL environment variable (standard for production)
+    database_url = os.environ.get('DATABASE_URL')
     
-    # 4. Handle the port, ensuring it's a valid integer
-    db_port_str = os.environ.get('DB_PORT', DEFAULT_DB_PORT)
-    try:
-        db_port = int(db_port_str)
-    except (ValueError, TypeError):
-        print(f"WARNING: DB_PORT value '{db_port_str}' is not a valid integer. Falling back to default port {DEFAULT_DB_PORT}.")
-        db_port = int(DEFAULT_DB_PORT)
+    if database_url:
+        # If we're in production (DATABASE_URL is set), use it.
+        # Render provides a 'mysql://' URL, but mysql-connector-python requires 'mysql+mysqlconnector://'
+        if database_url.startswith("mysql://"):
+            database_url = database_url.replace("mysql://", "mysql+mysqlconnector://", 1)
+        app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+    else:
+        # If we're local (DATABASE_URL is not set), build the URI from your local defaults.
+        # This part will now ONLY run on your local machine.
+        DEFAULT_DB_HOST = 'localhost'
+        DEFAULT_DB_USER = 'root'
+        DEFAULT_DB_PASSWORD = "cjarqi"
+        DEFAULT_DB_NAME = "guidance_db"
+        DEFAULT_DB_PORT = '3306'
+        
+        local_sqlalchemy_uri = (
+            f"mysql+mysqlconnector://{DEFAULT_DB_USER}:{DEFAULT_DB_PASSWORD}@"
+            f"{DEFAULT_DB_HOST}:{DEFAULT_DB_PORT}/{DEFAULT_DB_NAME}"
+        )
+        app.config['SQLALCHEMY_DATABASE_URI'] = local_sqlalchemy_uri
 
-    # 5. Construct the final SQLAlchemy Database URI string
-    sqlalchemy_uri = (
-        f"mysql+mysqlconnector://{db_user}:{db_password}@"
-        f"{db_host}:{db_port}/{db_name}"
-    )
-    
-    app.config['SQLALCHEMY_DATABASE_URI'] = sqlalchemy_uri
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SQLALCHEMY_ECHO'] = False # Set to True for debugging SQL queries
 
