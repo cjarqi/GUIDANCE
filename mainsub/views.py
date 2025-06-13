@@ -10,6 +10,7 @@ import os
 import uuid
 from werkzeug.utils import secure_filename
 import pandas as pd
+from .models import Program, StaffUser, UserRole
 
 views_bp = Blueprint('views', __name__)
 
@@ -818,3 +819,50 @@ def import_students():
             return redirect(request.url)
     
     return render_template('students/import_students.html')
+
+@views_bp.route('/seed-the-database/<secret_key>')
+def seed_database(secret_key):
+    # IMPORTANT: Change this key to something long and random.
+    # This is your password to run the seeding.
+    # Example: 'kjh435k-3h5-hjg345jhg-j345'
+    # You can also store this in an environment variable for better security.
+    SEEDING_SECRET = os.environ.get('SEEDING_SECRET', 'guidance123')
+
+    if secret_key != SEEDING_SECRET:
+        return "<h1>Invalid secret key.</h1>", 403
+
+    output = "<h1>Database Seeding Results:</h1><pre>"
+
+    try:
+        # Check if the superadmin user already exists
+        if StaffUser.query.filter_by(username="superadmin").first():
+            output += "Superadmin user already exists. Skipping user creation.\n"
+        else:
+            output += "Creating superadmin user...\n"
+            superadmin = StaffUser(
+                username="superadmin",
+                email="aikolykm04@gmail.com",
+                full_name="Guidance Counselor",
+                role=UserRole.COUNSELOR
+            )
+            superadmin.set_password("guidance")
+            db.session.add(superadmin)
+            output += "Superadmin user created successfully.\n"
+
+        # You can add more seeding logic here...
+        # For example, to add programs:
+        if not Program.query.filter_by(program_code="BSCS").first():
+            output += "Creating BSCS Program...\n"
+            prog = Program(program_name="Bachelor of Science in Computer Science", program_code="BSCS")
+            db.session.add(prog)
+            output += "BSCS Program created.\n"
+
+        db.session.commit()
+        output += "\n\n--- Seeding complete! Database commit was successful. ---"
+
+    except Exception as e:
+        db.session.rollback()
+        output += f"\n\n--- An error occurred: {e} ---\nDatabase changes were rolled back."
+
+    output += "</pre>"
+    return output
