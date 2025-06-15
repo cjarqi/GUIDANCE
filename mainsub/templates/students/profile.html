@@ -24,45 +24,272 @@
 {% endblock %}
 
 {% block head_extra %}
+<!-- REDESIGNED PRINT LAYOUT FOR OPTIMAL SPACE USAGE -->
 <style>
     @media print {
+        /* --- Hide the main application UI --- */
+        aside, header {
+            display: none !important;
+        }
+        main {
+            width: 100% !important; margin: 0 !important; padding: 0 !important;
+            border: none !important; box-shadow: none !important;
+        }
         .no-print {
             display: none !important;
         }
+
+        /* --- Optimized Page Setup --- */
         @page {
-            size: portrait;
-            margin: 0.75in;
+            size: A4 portrait;
+            margin: 10mm;
         }
         body {
-            background: #fff !important;
+            background-color: #fff !important;
+            font-size: 7pt;
+            line-height: 1.1;
+            font-family: Arial, sans-serif;
         }
+        
+        /* --- Print Header --- */
         .print-header-container {
             display: block !important;
+            margin-bottom: 15px !important;
         }
-        .bg-white, .bg-slate-50, .bg-green-50, .bg-amber-50, .bg-red-50 {
+        
+        /* --- Remove all backgrounds and shadows for print --- */
+        .bg-white, .bg-slate-50, .bg-green-50, .bg-amber-50, .bg-red-50, .bg-red-100, .bg-yellow-100,
+        .bg-green-100, .bg-blue-100, .bg-slate-100, .bg-purple-100, .bg-rose-100 {
+            background-color: #fff !important;
             box-shadow: none !important;
             border: 1px solid #ccc !important;
-            background-color: #fff !important;
         }
-        h1, h2, h3, p, span, div, td, th {
+        
+        /* --- Ensure all text is black --- */
+        h1, h2, h3, p, span, div, td, th, strong, a, i {
             color: #000 !important;
-        }
-        a {
             text-decoration: none !important;
+        }
+        
+        /* --- Compact Student Information Section --- */
+        .space-y-6 {
+            display: block !important;
+        }
+        
+        .space-y-6 > div {
+            margin-bottom: 8px !important;
+            page-break-inside: avoid;
+        }
+        
+        /* Student info grid - make it more compact */
+        .grid.grid-cols-1.md\\:grid-cols-2 {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 2px !important;
+            font-size: 6pt !important;
+        }
+        
+        .grid.grid-cols-1.md\\:grid-cols-2 > div {
+            padding: 1px 0 !important;
+            border-bottom: 1px solid #eee !important;
+        }
+        
+        /* Compact offense status blocks */
+        .grid.grid-cols-1.md\\:grid-cols-2.gap-6 {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 4px !important;
+            margin-bottom: 8px !important;
+        }
+        
+        .grid.grid-cols-1.md\\:grid-cols-2.gap-6 > div {
+            padding: 4px !important;
+            font-size: 6pt !important;
+            border: 1px solid #ccc !important;
+        }
+        
+        /* --- REDESIGNED INCIDENT HISTORY FOR MAXIMUM SPACE EFFICIENCY --- */
+        
+        /* Hide table headers */
+        #incident-history-table thead {
+            display: none !important;
+        }
+        
+        /* Convert table to compact incident blocks */
+        #incident-history-table {
+            display: block !important;
+            width: 100% !important;
+        }
+        
+        #incident-history-table tbody {
+            display: block !important;
+        }
+        
+        /* Each incident as a compact horizontal block */
+        #incident-history-table tbody tr {
+            display: block !important;
+            border: 1px solid #999 !important;
+            margin-bottom: 3px !important;
+            padding: 3px !important;
+            page-break-inside: avoid !important;
+            background: #fff !important;
+            font-size: 6pt !important;
+        }
+        
+        /* Convert table cells to inline elements with labels */
+        #incident-history-table td {
+            display: inline !important;
+            padding: 0 !important;
+            border: none !important;
+            margin-right: 8px !important;
+            font-size: 6pt !important;
+            line-height: 1.2 !important;
+        }
+        
+        /* Add labels using data-label attribute */
+        #incident-history-table td[data-label]::before {
+            content: attr(data-label) " ";
+            font-weight: bold !important;
+        }
+        
+        /* Hide actions column */
+        #incident-history-table td:nth-child(6) {
+            display: none !important;
+        }
+        
+        /* Force line breaks between major data points */
+        #incident-history-table td:nth-child(1)::after,
+        #incident-history-table td:nth-child(2)::after {
+            content: " | ";
+            font-weight: normal !important;
+        }
+        
+        #incident-history-table td:nth-child(3)::after {
+            content: "\A";
+            white-space: pre !important;
+        }
+        
+        /* Compact status badges */
+        #incident-history-table .px-2,
+        #incident-history-table .px-1\\.5 {
+            padding: 0px 2px !important;
+            font-size: 5pt !important;
+            border: 1px solid #999 !important;
+            border-radius: 1px !important;
+            background-color: #f5f5f5 !important;
+            color: #000 !important;
+            margin: 0 2px !important;
+        }
+        
+        /* Compact violation badges */
+        #incident-history-table .bg-red-50,
+        #incident-history-table .bg-yellow-50,
+        #incident-history-table .bg-orange-100 {
+            background-color: #f5f5f5 !important;
+            border: 1px solid #999 !important;
+            padding: 0px 2px !important;
+            font-size: 5pt !important;
             color: #000 !important;
         }
-        table {
-            font-size: 8pt;
+        
+        /* Ensure all nested content is compact */
+        #incident-history-table td * {
+            color: #000 !important;
+            font-size: 6pt !important;
+            line-height: 1.1 !important;
+            word-break: break-word !important;
         }
-        .text-indigo-600 { color: #000 !important; }
-        .text-green-700, .text-amber-700, .text-red-800, .text-slate-800, .text-slate-700, .text-slate-500 { color: #000 !important; }
+        
+        /* Make nested divs inline to save space */
+        #incident-history-table td div {
+            display: inline !important;
+            margin-right: 4px !important;
+        }
+        
+        /* Compact font sizes for different elements */
+        #incident-history-table .font-medium {
+            font-weight: bold !important;
+            font-size: 6pt !important;
+        }
+        
+        #incident-history-table .text-xs {
+            font-size: 5pt !important;
+        }
+        
+        /* Section headers */
+        h3.text-lg {
+            font-size: 8pt !important;
+            font-weight: bold !important;
+            margin-bottom: 3px !important;
+        }
+        
+        /* Compact card padding */
+        .p-6 {
+            padding: 4px !important;
+        }
+        
+        .px-6 {
+            padding-left: 4px !important;
+            padding-right: 4px !important;
+        }
+        
+        .py-4 {
+            padding-top: 2px !important;
+            padding-bottom: 2px !important;
+        }
+        
+        /* Remove excessive spacing */
+        .mb-4 {
+            margin-bottom: 2px !important;
+        }
+        
+        .mt-1 {
+            margin-top: 1px !important;
+        }
+        
+        /* Ensure overflow containers don't hide content */
+        .overflow-x-auto {
+            overflow: visible !important;
+        }
+        
+        /* Compact rounded corners for print */
+        .rounded-xl, .rounded-lg {
+            border-radius: 2px !important;
+        }
+        
+        /* Remove shadows and effects */
+        .shadow-lg, .shadow {
+            box-shadow: none !important;
+        }
+        
+        /* Optimize icon spacing */
+        .ri-alarm-warning-line,
+        .ri-error-warning-line,
+        .ri-shield-check-line,
+        .ri-information-line {
+            font-size: 8pt !important;
+            margin-right: 2px !important;
+        }
+        
+        /* Ensure proper page breaks */
+        .bg-white.rounded-xl.shadow-lg {
+            page-break-inside: avoid;
+        }
+        
+        /* Make sure everything fits within page margins */
+        * {
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+        }
     }
 </style>
 {% endblock %}
 
+
 {% block content %}
+<!-- This header is hidden on screen but will appear on the printed report -->
 <div class="print-header-container" style="display: none;">
-    <div style="display: flex; align-items: center; margin-bottom: 20px;">
+    <div style="display: flex; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 15px;">
         <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="School Logo" style="width: 70px; height: 70px;">
         <div style="margin-left: 20px;">
             <h1 style="font-size: 18pt; font-weight: bold; margin: 0;">PADRE GARCIA POLYTECHNIC COLLEGE</h1>
@@ -156,21 +383,41 @@
 
     <!-- Incident History Card -->
     <div class="bg-white rounded-xl shadow-lg">
-        <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center no-print">
+        <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center">
             <h3 class="text-lg font-semibold text-slate-700">Incident History</h3>
-            <button type="button"
-                    class="py-1.5 px-3 bg-indigo-500 text-white rounded-md text-xs font-medium hover:bg-indigo-600 transition flex items-center open-log-incident-modal-trigger"
-                    data-student-id-to-log="{{ student.id }}"
-                    data-student-name-to-log="{{ student.last_name }}, {{ student.first_name }} ({{ student.program.program_code if student.program else 'N/A' }} - {{ student.year_section }})">
-                 <i class="ri-add-line mr-1"></i> Log New Incident
-            </button>
+            <div class="no-print">
+                <button type="button"
+                        class="py-1.5 px-3 bg-indigo-500 text-white rounded-md text-xs font-medium hover:bg-indigo-600 transition flex items-center open-log-incident-modal-trigger"
+                        data-student-id-to-log="{{ student.id }}"
+                        data-student-name-to-log="{{ student.last_name }}, {{ student.first_name }} ({{ student.program.program_code if student.program else 'N/A' }} - {{ student.year_section }})">
+                     <i class="ri-add-line mr-1"></i> Log New Incident
+                </button>
+            </div>
         </div>
         <div class="overflow-x-auto">
             {% if incidents_with_sanctions %}
-                <table class="min-w-full divide-y divide-slate-100 text-sm">
+                <table id="incident-history-table" class="min-w-full divide-y divide-slate-100 text-sm">
                     <thead class="bg-slate-50"><tr><th class="px-4 py-3 text-left font-medium text-slate-500 uppercase tracking-wider">Date</th><th class="px-4 py-3 text-left font-medium text-slate-500 uppercase tracking-wider">Violation (Code)</th><th class="px-4 py-3 text-left font-medium text-slate-500 uppercase tracking-wider">Details</th><th class="px-4 py-3 text-left font-medium text-slate-500 uppercase tracking-wider">Status</th><th class="px-4 py-3 text-left font-medium text-slate-500 uppercase tracking-wider">Sanction Details</th><th class="px-4 py-3 text-left font-medium text-slate-500 uppercase tracking-wider no-print">Actions</th></tr></thead>
                     <tbody class="bg-white divide-y divide-slate-100">
-                        {% for incident, sanction in incidents_with_sanctions %}<tr class="hover:bg-slate-50"><td class="px-4 py-3 whitespace-nowrap text-slate-600">{{ incident.date_committed.strftime('%b %d, %Y %I:%M %p') }}</td><td class="px-4 py-3 text-slate-600"><div class="font-medium text-slate-700">{{ incident.violation.description | truncate(35) if incident.violation else 'N/A' }}</div><div class="text-xs text-slate-500">({{ incident.violation.violation_code if incident.violation else 'N/A' }}){% if incident.violation and incident.violation.type == 'Major' or incident.is_escalated_to_major %}<span class="ml-1 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-red-50 text-red-600">Major</span>{% elif incident.violation and incident.violation.type == 'Minor' %}<span class="ml-1 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-yellow-50 text-yellow-600">Minor</span>{% endif %}{% if incident.is_second_or_subsequent_major %}<span class="ml-1 px-1.5 py-0.5 text-xs font-bold rounded-full bg-orange-100 text-orange-700 animate-pulse">Repeat Major!</span>{% endif %}</div></td><td class="px-4 py-3 text-slate-600 min-w-[250px] max-w-xs break-words">{{ incident.details }}</td><td class="px-4 py-3 whitespace-nowrap">{% set status_color_map = { 'Pending Review': 'bg-yellow-100 text-yellow-800', 'Pending Major Sanction Review': 'bg-amber-100 text-amber-800', 'Escalated': 'bg-orange-100 text-orange-800', 'Sanction Assigned': 'bg-blue-100 text-blue-800', 'Sanction Completed': 'bg-teal-100 text-teal-800', 'Resolved': 'bg-green-100 text-green-800', 'Closed': 'bg-slate-100 text-slate-700' } %}<span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {{ status_color_map.get(incident.status, 'bg-gray-100 text-gray-800') }}">{{ incident.status | title }}</span></td><td class="px-4 py-3 text-slate-600">{% if sanction %}<div class="font-medium">{{ sanction.sanction_details | default('N/A', true) }}</div><div class="text-xs text-slate-400">Assigned: {{ sanction.date_assigned.strftime('%b %d, %Y') if sanction.date_assigned else 'N/A' }}</div>{% if sanction.completion_date %}<div class="text-xs text-green-500">Completed: {{ sanction.completion_date.strftime('%b %d, %Y') }}</div>{% elif sanction.due_date %}<div class="text-xs text-orange-500">Due: {{ sanction.due_date.strftime('%b %d, %Y') }}</div>{% endif %}{% elif incident.status == "Pending Major Sanction Review" or (incident.violation and incident.violation.type == 'Major' and incident.status != 'Resolved' and incident.status != 'Sanction Completed') %}<span class="italic text-slate-500">Awaiting Major Sanction</span>{% else %}N/A{% endif %}</td><td class="px-4 py-3 whitespace-nowrap no-print"><a href="{{ url_for('views.incident_details', incident_id=incident.id) }}" class="text-indigo-600 hover:text-indigo-800 text-xs" title="View Incident Details"><i class="ri-search-eye-line"></i> View</a></td></tr>{% endfor %}
+                        {% for incident, sanction in incidents_with_sanctions %}
+                        <tr class="hover:bg-slate-50">
+                            <td data-label="Date:" class="px-4 py-3 whitespace-nowrap text-slate-600">{{ incident.date_committed.strftime('%b %d, %Y %I:%M %p') }}</td>
+                            <td data-label="Violation:" class="px-4 py-3 text-slate-600">
+                                <div>
+                                    <div class="font-medium text-slate-700">{{ incident.violation.description | truncate(35) if incident.violation else 'N/A' }}</div>
+                                    <div class="text-xs text-slate-500">({{ incident.violation.violation_code if incident.violation else 'N/A' }}){% if incident.violation and incident.violation.type == 'Major' or incident.is_escalated_to_major %}<span class="ml-1 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-red-50 text-red-600">Major</span>{% elif incident.violation and incident.violation.type == 'Minor' %}<span class="ml-1 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-yellow-50 text-yellow-600">Minor</span>{% endif %}{% if incident.is_second_or_subsequent_major %}<span class="ml-1 px-1.5 py-0.5 text-xs font-bold rounded-full bg-orange-100 text-orange-700 animate-pulse">Repeat Major!</span>{% endif %}</div>
+                                </div>
+                            </td>
+                            <td data-label="Details:" class="px-4 py-3 text-slate-600 min-w-[250px] max-w-xs break-words"><span>{{ incident.details }}</span></td>
+                            <td data-label="Status:" class="px-4 py-3 whitespace-nowrap">{% set status_color_map = { 'Pending Review': 'bg-yellow-100 text-yellow-800', 'Pending Major Sanction Review': 'bg-amber-100 text-amber-800', 'Escalated': 'bg-orange-100 text-orange-800', 'Sanction Assigned': 'bg-blue-100 text-blue-800', 'Sanction Completed': 'bg-teal-100 text-teal-800', 'Resolved': 'bg-green-100 text-green-800', 'Closed': 'bg-slate-100 text-slate-700' } %}<span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {{ status_color_map.get(incident.status, 'bg-gray-100 text-gray-800') }}">{{ incident.status | title }}</span></td>
+                            <td data-label="Sanction:" class="px-4 py-3 text-slate-600">
+                                <div>
+                                    {% if sanction %}<div class="font-medium">{{ sanction.sanction_details | default('N/A', true) }}</div><div class="text-xs text-slate-400">Assigned: {{ sanction.date_assigned.strftime('%b %d, %Y') if sanction.date_assigned else 'N/A' }}</div>{% if sanction.completion_date %}<div class="text-xs text-green-500">Completed: {{ sanction.completion_date.strftime('%b %d, %Y') }}</div>{% elif sanction.due_date %}<div class="text-xs text-orange-500">Due: {{ sanction.due_date.strftime('%b %d, %Y') }}</div>{% endif %}{% elif incident.status == "Pending Major Sanction Review" or (incident.violation and incident.violation.type == 'Major' and incident.status != 'Resolved' and incident.status != 'Sanction Completed') %}<span class="italic text-slate-500">Awaiting Major Sanction</span>{% else %}N/A{% endif %}
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap no-print"><a href="{{ url_for('views.incident_details', incident_id=incident.id) }}" class="text-indigo-600 hover:text-indigo-800 text-xs" title="View Incident Details"><i class="ri-search-eye-line"></i> View</a></td>
+                        </tr>
+                        {% endfor %}
                     </tbody>
                 </table>
             {% else %}
@@ -206,7 +453,6 @@
 
 {% block body_end_scripts %}
 <script>
-// THIS IS THE FULL AND CORRECT SCRIPT BLOCK
 document.addEventListener('DOMContentLoaded', function() {
     // --- Edit Student Modal JS ---
     const editStudentModal = document.getElementById('editStudentModal');
@@ -215,7 +461,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const cancelEditStudentBtn = document.getElementById('cancelEditStudentBtn');
     const editStudentForm = document.getElementById('editStudentForm');
     const openEditStudentModalBtnProfile = document.querySelector('.open-edit-student-modal-btn'); 
-    async function populateEditForm(studentId) { try {const response = await fetch(`/student/${studentId}/data`);if (!response.ok) {alert('Error fetching student data. Status: ' + response.status);return;}const student = await response.json();document.getElementById('edit_student_id').value = student.id;document.getElementById('edit_student_number').value = student.student_number;document.getElementById('edit_first_name').value = student.first_name;document.getElementById('edit_last_name').value = student.last_name;document.getElementById('edit_program_id').value = student.program_id;document.getElementById('edit_year_section').value = student.year_section; document.getElementById('edit_contact_email').value = student.contact_email;document.getElementById('edit_contact_phone').value = student.contact_phone;document.getElementById('edit_status').value = student.status;editStudentForm.action = `/student/${student.id}/edit`;} catch (error) {console.error('Error populating edit form:', error);alert('An error occurred while fetching student details.');}}
+    async function populateEditForm(studentId) { try {const response = await fetch(`/student/${studentId}/data`);if (!response.ok) {alert('Error fetching student data. Status: ' + response.status);return;}const student = await response.json();document.getElementById('edit_student_id').value = student.id;document.getElementById('edit_student_number').value = student.student_number;document.getElementById('edit_first_name').value = student.first_name;document.getElementById('edit_middle_name').value = student.middle_name || '';document.getElementById('edit_last_name').value = student.last_name;document.getElementById('edit_program_id').value = student.program_id;document.getElementById('edit_year_section').value = student.year_section; document.getElementById('edit_contact_email').value = student.contact_email;document.getElementById('edit_contact_phone').value = student.contact_phone;document.getElementById('edit_status').value = student.status;editStudentForm.action = `/student/${student.id}/edit`;} catch (error) {console.error('Error populating edit form:', error);alert('An error occurred while fetching student details.');}}
     function openEditStudentModal(studentId) { if(editStudentForm) editStudentForm.reset(); populateEditForm(studentId); if(editStudentModal) editStudentModal.classList.remove('hidden'); setTimeout(() => { if(editStudentModal) editStudentModal.classList.remove('opacity-0'); if(editStudentModalContent) { editStudentModalContent.classList.remove('scale-95', 'opacity-0'); editStudentModalContent.classList.add('scale-100', 'opacity-100');}}, 10);}
     function closeEditStudentModal() { if(editStudentModalContent) { editStudentModalContent.classList.remove('scale-100', 'opacity-100'); editStudentModalContent.classList.add('scale-95', 'opacity-0');} if(editStudentModal) editStudentModal.classList.add('opacity-0'); setTimeout(() => { if(editStudentModal) editStudentModal.classList.add('hidden'); }, 300);}
     if(openEditStudentModalBtnProfile) { openEditStudentModalBtnProfile.addEventListener('click', function() { const studentId = this.dataset.studentId; openEditStudentModal(studentId); }); }

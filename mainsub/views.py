@@ -243,14 +243,33 @@ def add_student():
 @login_required
 def get_student_data(student_id):
     student = Student.query.get_or_404(student_id)
-    return jsonify({"id": student.id, "student_number": student.student_number, "first_name": student.first_name, "last_name": student.last_name, "program_id": student.program_id, "year_section": student.year_section, "contact_email": student.contact_info_email or "", "contact_phone": student.contact_info_phone or "", "status": student.status})
+    return jsonify({
+        "id": student.id,
+        "student_number": student.student_number,
+        "first_name": student.first_name,
+        "middle_name": student.middle_name or "",
+        "last_name": student.last_name,
+        "program_id": student.program_id,
+        "year_section": student.year_section,
+        "contact_email": student.contact_info_email or "",
+        "contact_phone": student.contact_info_phone or "",
+        "status": student.status
+    })
 
 @views_bp.route('/student/<int:student_id>/edit', methods=['POST'])
 @login_required
 def edit_student(student_id):
     student_to_edit = Student.query.get_or_404(student_id)
     if request.method == 'POST':
-        first_name = request.form.get('first_name','').strip(); last_name = request.form.get('last_name','').strip(); program_id_str = request.form.get('program_id'); year_section = request.form.get('year_section', '').strip().upper(); contact_email = request.form.get('contact_email', '').strip(); contact_phone = request.form.get('contact_phone', '').strip(); status = request.form.get('status', 'Active')
+        first_name = request.form.get('first_name','').strip()
+        middle_name = request.form.get('middle_name', '').strip()
+        last_name = request.form.get('last_name','').strip()
+        program_id_str = request.form.get('program_id')
+        year_section = request.form.get('year_section', '').strip().upper()
+        contact_email = request.form.get('contact_email', '').strip()
+        contact_phone = request.form.get('contact_phone', '').strip()
+        status = request.form.get('status', 'Active')
+        
         errors = []
         if not first_name: errors.append("First name is required.")
         if not last_name: errors.append("Last name is required.")
@@ -266,7 +285,14 @@ def edit_student(student_id):
             for error in errors: flash(error, 'error')
         else:
             try:
-                student_to_edit.first_name = first_name; student_to_edit.last_name = last_name; student_to_edit.program_id = program_id; student_to_edit.year_section = year_section; student_to_edit.contact_info_email = contact_email if contact_email else None; student_to_edit.contact_info_phone = contact_phone if contact_phone else None; student_to_edit.status = status
+                student_to_edit.first_name = first_name
+                student_to_edit.middle_name = middle_name if middle_name else None
+                student_to_edit.last_name = last_name
+                student_to_edit.program_id = program_id
+                student_to_edit.year_section = year_section
+                student_to_edit.contact_info_email = contact_email if contact_email else None
+                student_to_edit.contact_info_phone = contact_phone if contact_phone else None
+                student_to_edit.status = status
                 log_audit("Edited Student", "Student", student_to_edit.id, f"Edited student {student_to_edit.first_name} {student_to_edit.last_name}")
                 db.session.commit(); flash(f'Student {student_to_edit.first_name} {student_to_edit.last_name} updated successfully!', 'success')
             except Exception as e: db.session.rollback(); flash(f'Error updating student: {str(e)}', 'error')

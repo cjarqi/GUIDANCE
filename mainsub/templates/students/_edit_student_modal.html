@@ -1,112 +1,85 @@
-{# GUIDANCE/mainsub/templates/students/_edit_student_modal.html #}
-<div id="editStudentModal"
-     class="fixed inset-0 bg-slate-900 bg-opacity-50 z-50 flex items-center justify-center p-4 hidden transition-opacity duration-300 ease-in-out opacity-0"
-     aria-labelledby="edit-student-modal-title" role="dialog" aria-modal="true">
-
-    <div id="editStudentModalContent"
-         class="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col transform transition-all duration-300 ease-in-out scale-95 opacity-0">
-        <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-            <h3 id="edit-student-modal-title" class="text-lg font-semibold text-slate-800">Edit Student Information</h3>
-            <button type="button" id="closeEditStudentModalBtn"
-                    class="w-8 h-8 flex items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
-                    aria-label="Close modal">
-                <i class="ri-close-line text-xl"></i>
+<!-- Edit Student Modal -->
+<div id="editStudentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
+    <div id="editStudentModalContent" class="bg-white rounded-lg shadow-xl w-full max-w-2xl transform scale-95 opacity-0 transition-transform-opacity duration-300">
+        <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+            <h2 class="text-xl font-semibold text-slate-800">Edit Student Record</h2>
+            <button id="closeEditStudentModalBtn" class="text-slate-400 hover:text-slate-600">
+                <i class="ri-close-line text-2xl"></i>
             </button>
         </div>
-
-        <div class="p-6 overflow-y-auto flex-1 space-y-4">
-            <form id="editStudentForm" method="POST"> {# Action will be set by JavaScript #}
+        <form id="editStudentForm" method="POST">
+            <div class="p-6 space-y-4">
+                <!-- Hidden student ID input -->
                 <input type="hidden" id="edit_student_id" name="student_id">
 
                 <div>
                     <label for="edit_student_number" class="block text-sm font-medium text-slate-700 mb-1">Student ID Number <span class="text-red-500">*</span></label>
-                    <input type="text" id="edit_student_number" name="student_number" required
-                           class="block w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg shadow-sm
-                                  focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition bg-slate-50"
-                           placeholder="e.g., 2023-0001-PGPA-0" readonly>
-                           <p class="text-xs text-slate-400 mt-1">Student ID cannot be changed after creation.</p>
+                    <input type="text" id="edit_student_number" name="student_number" class="block w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-slate-50 text-slate-500 cursor-not-allowed" placeholder="e.g., 2023-0001-PGPA-0" readonly disabled>
+                    <p class="text-xs text-slate-500 mt-1">Student ID cannot be changed after creation.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label for="edit_first_name" class="block text-sm font-medium text-slate-700 mb-1">First Name <span class="text-red-500">*</span></label>
+                        <input type="text" id="edit_first_name" name="first_name" required class="block w-full px-3 py-2 text-sm border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                    
+                    <!-- THIS IS THE NEWLY ADDED MIDDLE NAME FIELD -->
+                    <div>
+                        <label for="edit_middle_name" class="block text-sm font-medium text-slate-700 mb-1">Middle Name</label>
+                        <input type="text" id="edit_middle_name" name="middle_name" class="block w-full px-3 py-2 text-sm border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                    
+                    <div>
+                        <label for="edit_last_name" class="block text-sm font-medium text-slate-700 mb-1">Last Name <span class="text-red-500">*</span></label>
+                        <input type="text" id="edit_last_name" name="last_name" required class="block w-full px-3 py-2 text-sm border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label for="edit_first_name" class="block text-sm font-medium text-slate-700 mb-1">First Name <span class="text-red-500">*</span></label>
-                        <input type="text" id="edit_first_name" name="first_name" required
-                               class="block w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg shadow-sm
-                                      focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        <label for="edit_program_id" class="block text-sm font-medium text-slate-700 mb-1">Program <span class="text-red-500">*</span></label>
+                        <select id="edit_program_id" name="program_id" required class="block w-full px-3 py-2 text-sm border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="" disabled>Select a program</option>
+                            {% for prog in programs_for_filter %}
+                                <option value="{{ prog.id }}">{{ prog.program_name }} ({{ prog.program_code }})</option>
+                            {% endfor %}
+                        </select>
                     </div>
                     <div>
-                        <label for="edit_last_name" class="block text-sm font-medium text-slate-700 mb-1">Last Name <span class="text-red-500">*</span></label>
-                        <input type="text" id="edit_last_name" name="last_name" required
-                               class="block w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg shadow-sm
-                                      focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        <label for="edit_year_section" class="block text-sm font-medium text-slate-700 mb-1">Year & Section <span class="text-red-500">*</span></label>
+                        <input type="text" id="edit_year_section" name="year_section" required class="block w-full px-3 py-2 text-sm border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g., 1A, 2B, 3C1">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="edit_contact_email" class="block text-sm font-medium text-slate-700 mb-1">Contact Email (Optional)</label>
+                        <input type="email" id="edit_contact_email" name="contact_email" class="block w-full px-3 py-2 text-sm border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label for="edit_contact_phone" class="block text-sm font-medium text-slate-700 mb-1">Contact Phone (Optional)</label>
+                        <input type="tel" id="edit_contact_phone" name="contact_phone" class="block w-full px-3 py-2 text-sm border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
                     </div>
                 </div>
 
                 <div>
-                    <label for="edit_program_id" class="block text-sm font-medium text-slate-700 mb-1">Program <span class="text-red-500">*</span></label>
-                    <select id="edit_program_id" name="program_id" required
-                            class="block w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg shadow-sm
-                                   focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                        <option value="" disabled>Select program...</option>
-                        {% if programs_for_filter %}
-                            {% for program in programs_for_filter %}
-                                <option value="{{ program.id }}">{{ program.program_name }} ({{ program.program_code }})</option>
-                            {% endfor %}
-                        {% else %}
-                             <option value="" disabled>Loading programs...</option>
-                        {% endif %}
-                    </select>
-                </div>
-
-                {# MODIFIED: Single field for Year & Section #}
-                <div>
-                    <label for="edit_year_section" class="block text-sm font-medium text-slate-700 mb-1">Year & Section <span class="text-red-500">*</span></label>
-                    <input type="text" id="edit_year_section" name="year_section" required
-                           class="block w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg shadow-sm
-                                  focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                           placeholder="e.g., 1A, 2B, 3C1">
-                </div>
-                {# END MODIFIED SECTION #}
-
-                 <div>
-                    <label for="edit_contact_email" class="block text-sm font-medium text-slate-700 mb-1">Contact Email (Optional)</label>
-                    <input type="email" id="edit_contact_email" name="contact_email"
-                           class="block w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg shadow-sm
-                                  focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                </div>
-                <div>
-                    <label for="edit_contact_phone" class="block text-sm font-medium text-slate-700 mb-1">Contact Phone (Optional)</label>
-                    <input type="tel" id="edit_contact_phone" name="contact_phone"
-                           class="block w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg shadow-sm
-                                  focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                </div>
-
-                 <div>
                     <label for="edit_status" class="block text-sm font-medium text-slate-700 mb-1">Status <span class="text-red-500">*</span></label>
-                    <select id="edit_status" name="status" required
-                            class="block w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg shadow-sm
-                                   focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                    <select id="edit_status" name="status" required class="block w-full px-3 py-2 text-sm border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
                         <option value="Active">Active</option>
                         <option value="Inactive">Inactive</option>
                         <option value="Suspended">Suspended</option>
-                        <option value="Graduated">Graduated</option>
                         <option value="Expelled">Expelled</option>
+                        <option value="Graduated">Graduated</option>
                         <option value="Transferred Out">Transferred Out</option>
                         <option value="Dropped">Dropped</option>
                     </select>
                 </div>
-            </form>
-        </div>
-
-        <div class="px-6 py-4 border-t border-slate-200 bg-slate-50 flex justify-end space-x-3">
-            <button type="button" id="cancelEditStudentBtn"
-                    class="px-4 py-2 border border-slate-300 text-slate-700 bg-white rounded-lg text-sm font-medium hover:bg-slate-50 transition shadow-sm">
-                Cancel
-            </button>
-            <button type="submit" form="editStudentForm"
-                    class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                Save Changes
-            </button>
-        </div>
+            </div>
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end space-x-2">
+                <button type="button" id="cancelEditStudentBtn" class="py-2 px-4 border border-slate-300 text-slate-700 bg-white rounded-lg font-medium text-sm hover:bg-slate-50 transition shadow-sm">Cancel</button>
+                <button type="submit" class="py-2 px-4 bg-indigo-600 text-white rounded-lg font-medium text-sm hover:bg-indigo-700 transition shadow-sm">Save Changes</button>
+            </div>
+        </form>
     </div>
 </div>
