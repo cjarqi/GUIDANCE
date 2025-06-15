@@ -31,6 +31,8 @@
     <div class="bg-white p-6 rounded-xl shadow-lg">
         <div class="flex justify-between items-center mb-4 border-b pb-3">
             <h3 class="text-lg font-semibold text-slate-700">Incident Information</h3>
+            
+            <!-- START: THIS IS THE ORIGINAL LOGIC, RESTORED -->
             {% if not incident.sanction_applied and 
                   (incident.status == 'Pending Major Sanction Review' or 
                    (incident.violation.type == 'Major' and incident.status == 'Pending Review') or 
@@ -47,6 +49,7 @@
                     <i class="ri-scales-3-line mr-1"></i> Assign Major Sanction
                 </button>
             {% endif %}
+            <!-- END: ORIGINAL LOGIC -->
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm">
             <div><strong class="text-slate-500 block mb-0.5">Student:</strong> <span class="text-slate-800">{{ incident.student.full_name }} ({{ incident.student.student_number }})</span></div>
@@ -68,6 +71,7 @@
         </div>
     </div>
 
+    <!-- THIS IS THE RESTORED BLOCK -->
     {% if incident.sanction_applied %}{% set sanction = incident.sanction_applied %}<div class="bg-white p-6 rounded-xl shadow-lg"><div class="flex justify-between items-center mb-4 border-b pb-3"><h3 class="text-lg font-semibold text-slate-700">Sanction Information</h3>{% if not sanction.completion_date and incident.status in ['Sanction Assigned', 'Sanction Completed'] %}<form action="{{ url_for('views.complete_sanction', sanction_log_id=sanction.id) }}" method="POST" class="inline"><button type="submit" class="py-1.5 px-3 bg-teal-500 text-white rounded-md text-xs font-medium hover:bg-teal-600 transition flex items-center" onclick="return confirm('Are you sure you want to mark this sanction as completed?');"><i class="ri-check-double-line mr-1"></i> Mark as Completed</button></form>{% elif sanction.completion_date %}<span class="py-1.5 px-3 bg-green-100 text-green-700 rounded-md text-xs font-semibold flex items-center"><i class="ri-check-line mr-1"></i> Sanction Completed</span>{% endif %}</div><div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm"><div><strong class="text-slate-500 block mb-0.5">Sanction Type:</strong> <span class="text-slate-800">{{ sanction.sanction_type }}</span></div><div><strong class="text-slate-500 block mb-0.5">Date Assigned:</strong> <span class="text-slate-800">{{ sanction.date_assigned.strftime('%b %d, %Y') if sanction.date_assigned else 'N/A' }}</span></div><div class="md:col-span-2"><strong class="text-slate-500 block mb-0.5">Specific Details/Duration:</strong> <p class="text-slate-800 whitespace-pre-wrap">{{ sanction.sanction_details }}</p></div>{% if sanction.due_date %}<div><strong class="text-slate-500 block mb-0.5">Due Date:</strong> <span class="text-slate-800">{{ sanction.due_date.strftime('%b %d, %Y') }}</span></div>{% endif %}<div><strong class="text-slate-500 block mb-0.5">Completion Date:</strong> {% if sanction.completion_date %}<span class="text-green-600 font-semibold">{{ sanction.completion_date.strftime('%b %d, %Y') }}</span>{% else %}<span class="text-slate-800 italic">Pending</span>{% endif %}</div>{% if sanction.notes %}<div class="md:col-span-2"><strong class="text-slate-500 block mb-0.5">Sanction Notes:</strong> <p class="text-slate-800 whitespace-pre-wrap">{{ sanction.notes }}</p></div>{% endif %}</div></div>
     {% elif not incident.sanction_applied and not (incident.status == 'Pending Major Sanction Review' or (incident.violation and incident.violation.type == 'Major' and incident.status != 'Resolved' and incident.status != 'Sanction Completed') or (incident.is_escalated_to_major and incident.status == 'Pending Review')) %}
     <div class="bg-slate-50 p-6 rounded-xl shadow-lg border border-slate-200"><h3 class="text-lg font-semibold text-slate-700 mb-2">No Sanction Logged</h3><p class="text-sm text-slate-600">No specific sanction has been formally logged for this incident yet.</p></div>

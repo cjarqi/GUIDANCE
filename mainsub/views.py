@@ -554,23 +554,49 @@ def user_list():
 @login_required
 def add_user():
     if request.method == 'POST':
-        username = request.form.get('username', '').strip(); full_name = request.form.get('full_name', '').strip(); password = request.form.get('password'); confirm_password = request.form.get('confirm_password'); role_str = request.form.get('role')
+        # START: Get the new email field from the form
+        username = request.form.get('username', '').strip()
+        full_name = request.form.get('full_name', '').strip()
+        email = request.form.get('email', '').strip()  # <-- ADDED
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        role_str = request.form.get('role')
+        # END: Get the new email field from the form
+        
         errors = []
         if not username: errors.append("Username is required.")
         elif StaffUser.query.filter_by(username=username).first(): errors.append(f"Username '{username}' already exists.")
+        
         if not full_name: errors.append("Full Name is required.")
+        
+        # START: Add validation for the email field
+        if not email: errors.append("Email is required.")
+        elif StaffUser.query.filter_by(email=email).first(): errors.append(f"Email '{email}' is already in use.")
+        # END: Add validation for the email field
+
         if not password: errors.append("Password is required.")
         elif len(password) < 8: errors.append("Password must be at least 8 characters long.")
         if password != confirm_password: errors.append("Passwords do not match.")
+        
         role_enum = None
         if role_str:
             try: role_enum = UserRole[role_str]
             except KeyError: errors.append("Invalid role selected.")
         else: errors.append("Role is required.")
+
         if errors:
             for error_msg in errors: flash(error_msg, 'error')
         else:
-            new_user = StaffUser(username=username, full_name=full_name, role=role_enum, is_active_staff=True)
+            # START: Add email to the new StaffUser object
+            new_user = StaffUser(
+                username=username, 
+                full_name=full_name, 
+                email=email,  # <-- ADDED
+                role=role_enum, 
+                is_active_staff=True
+            )
+            # END: Add email to the new StaffUser object
+
             new_user.set_password(password)
             try:
                 db.session.add(new_user); db.session.flush()
@@ -580,6 +606,7 @@ def add_user():
                 return redirect(url_for('views.user_list'))
             except Exception as e:
                 db.session.rollback(); flash(f'Error creating user account: {str(e)}', 'error')
+    
     return render_template('settings/users/add_edit_user.html', form_action_url=url_for('views.add_user'), user_to_edit=None, roles=UserRole, current_user=current_user, page_title="Add New Staff Account")
 
 @views_bp.route('/settings/users/<int:user_id>/edit', methods=['GET', 'POST'])
@@ -587,32 +614,59 @@ def add_user():
 def edit_user(user_id):
     user_to_edit = StaffUser.query.get_or_404(user_id)
     if request.method == 'POST':
-        full_name = request.form.get('full_name', '').strip(); is_active_staff = 'is_active_staff' in request.form; new_password = request.form.get('new_password'); confirm_new_password = request.form.get('confirm_new_password'); role_str = request.form.get('role')
+        # START: Get the new email field from the form
+        full_name = request.form.get('full_name', '').strip()
+        email = request.form.get('email', '').strip()  # <-- ADDED
+        is_active_staff = 'is_active_staff' in request.form
+        new_password = request.form.get('new_password')
+        confirm_new_password = request.form.get('confirm_new_password')
+        role_str = request.form.get('role')
+        # END: Get the new email field from the form
+
         errors = []
         if not full_name: errors.append("Full Name is required.")
+        
+        # START: Add validation for the email field
+        if not email: errors.append("Email is required.")
+        # Check if another user already has this email
+        existing_email_user = StaffUser.query.filter(StaffUser.email == email, StaffUser.id != user_id).first()
+        if existing_email_user:
+            errors.append(f"Email '{email}' is already in use by another account.")
+        # END: Add validation for the email field
+
         role_enum = None
         if role_str:
             try: role_enum = UserRole[role_str]
             except KeyError: errors.append("Invalid role selected.")
         else: errors.append("Role is required.")
+        
         if new_password: 
             if len(new_password) < 8: errors.append("New password must be at least 8 characters long.")
             if new_password != confirm_new_password: errors.append("New passwords do not match.")
+
         if errors:
             for error_msg in errors: flash(error_msg, 'error')
         else: 
-            user_to_edit.full_name = full_name; user_to_edit.is_active_staff = is_active_staff; user_to_edit.role = role_enum
-            log_details = f"Edited user '{user_to_edit.username}'. Full Name: {full_name}, Role: {role_enum.name}, Active: {is_active_staff}"
+            # START: Update the user object with the new email
+            user_to_edit.full_name = full_name
+            user_to_edit.email = email  # <-- ADDED
+            user_to_edit.is_active_staff = is_active_staff
+            user_to_edit.role = role_enum
+            # END: Update the user object
+            
+            log_details = f"Edited user '{user_to_edit.username}'. Full Name: {full_name}, Email: {email}, Role: {role_enum.name}, Active: {is_active_staff}"
             if new_password: 
                 user_to_edit.set_password(new_password)
                 flash('Password updated successfully.', 'info') 
                 log_details += " (Password Changed)"
+            
             log_audit("Edited User", "StaffUser", user_to_edit.id, log_details)
             try:
                 db.session.commit(); flash(f'User "{user_to_edit.username}" details updated successfully!', 'success')
                 return redirect(url_for('views.user_list'))
             except Exception as e:
                 db.session.rollback(); flash(f'Error updating user: {str(e)}', 'error')
+
     return render_template('settings/users/add_edit_user.html', form_action_url=url_for('views.edit_user', user_id=user_id), user_to_edit=user_to_edit, roles=UserRole, current_user=current_user, page_title=f"Edit Staff Account: {user_to_edit.username}")
 
 # === REPORTING ROUTES ===

@@ -10,6 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.default.min.css" rel="stylesheet">
+    <!-- AlpineJS for UI interactions -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -69,6 +70,7 @@
                 </button>
                 <div class="flex-1 px-4 flex justify-end">
                     <div class="ml-4 flex items-center md:ml-6">
+                        <!-- Notification Bell -->
                         <div x-data="{ open: false }" @click.outside="open = false" class="relative">
                             <button @click="open = !open" class="relative w-9 h-9 flex items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-indigo-600 transition-colors">
                                 <i class="ri-notification-3-line text-xl"></i>
@@ -107,6 +109,7 @@
                             </div>
                         </div>
                         
+                        <!-- User Avatar -->
                         <div class="ml-3 relative">
                             <div class="flex items-center">
                                 <img src="https://ui-avatars.com/api/?name={{ current_user.full_name.split(' ')|map('first')|join('') if current_user and current_user.is_authenticated and current_user.full_name else 'G' }}&background=e0e7ff&color=4338ca&bold=true" alt="User Avatar" class="w-8 h-8 rounded-full mr-2 border-2 border-indigo-200">
@@ -128,9 +131,9 @@
                     {% endblock %}
                     {% with messages = get_flashed_messages(with_categories=true) %}
                         {% if messages %}
-                            <div class="mb-4 space-y-2 no-print">
+                            <div class="mb-4 space-y-2">
                             {% for category, message in messages %}
-                                <div class="p-3 text-sm rounded-md flex items-start {% if category == 'error' %} bg-red-100 text-red-700 border border-red-200 {% elif category == 'success' %} bg-green-100 text-green-700 border border-green-200 {% else %} bg-blue-100 text-blue-700 border border-blue-200 {% endif %}" role="alert">
+                                <div class="flash-message p-3 text-sm rounded-md flex items-start {% if category == 'error' %} bg-red-100 text-red-700 border border-red-200 {% elif category == 'success' %} bg-green-100 text-green-700 border border-green-200 {% else %} bg-blue-100 text-blue-700 border border-blue-200 {% endif %}" role="alert">
                                     <i class="ri-information-line text-lg mr-2 mt-0.5"></i>
                                     <span>{{ message }}</span>
                                 </div>
@@ -173,6 +176,24 @@
         });
     });
     </script>
+
+    <!-- START: SCRIPT TO HIDE FLASH MESSAGES -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const flashMessages = document.querySelectorAll('.flash-message');
+            flashMessages.forEach(function(message) {
+                setTimeout(function() {
+                    message.style.transition = 'opacity 0.5s ease';
+                    message.style.opacity = '0';
+                    setTimeout(function() {
+                        message.style.display = 'none';
+                    }, 500); // Wait for the fade-out animation to finish
+                }, 5000); // 5000 milliseconds = 5 seconds
+            });
+        });
+    </script>
+    <!-- END: SCRIPT TO HIDE FLASH MESSAGES -->
+
     {% block body_end_scripts %}{% endblock %}
 </body>
 </html>
